@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gara All'Annello 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e0f11;
+    --surface:#16181c;
+    --surface2:#1e2126;
+    --border:#2a2d34;
+    --border2:#383c44;
+    --text:#e8e9ec;
+    --text2:#9098a8;
+    --text3:#5a6272;
+    --accent:#d4a843;
+    --accent2:#a67c28;
+    --green:#3ecf8e;
+    --green-dim:#1a4a35;
+    --red:#f04040;
+    --blue:#5a9cf5;
+    --radius:8px;
+    --radius-lg:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+  /* layout */
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;position:sticky;top:0;z-index:100}
+  .header-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:16px;height:52px}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--accent);letter-spacing:1px;white-space:nowrap}
+  .nav-tabs{display:flex;gap:2px;overflow-x:auto;flex:1;-webkit-overflow-scrolling:touch}
+  .nav-tabs::-webkit-scrollbar{display:none}
+  .tab{padding:6px 14px;border-radius:var(--radius);font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border:none;background:transparent;white-space:nowrap;transition:all .15s}
+  .tab:hover{color:var(--text);background:var(--surface2)}
+  .tab.act{color:var(--accent);background:rgba(212,168,67,.12)}
+  .save-btn{padding:6px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;color:#000;background:var(--accent);cursor:pointer;border:none;white-space:nowrap;transition:opacity .15s}
+  .save-btn:hover{opacity:.85}
+  .save-btn:disabled{opacity:.4;cursor:not-allowed}
+  .edit-btn{padding:6px 14px;border-radius:var(--radius);font-size:12px;font-weight:500;color:var(--text2);background:var(--surface2);cursor:pointer;border:1px solid var(--border2);transition:all .15s}
+  .edit-btn:hover{color:var(--text);border-color:var(--border)}
+
+  main{max-width:1200px;margin:0 auto;padding:24px 24px 60px}
+
+  /* cards */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+  .card+.card{margin-top:16px}
+
+  /* metric grid */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+  .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px}
+  .metric-val{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--text);line-height:1}
+  .metric-lbl{font-size:11px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+  /* table */
+  .tbl-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--border)}
+  table{width:100%;border-collapse:collapse;min-width:600px}
+  th{padding:8px 12px;font-size:11px;font-weight:600;color:var(--text3);text-align:left;text-transform:uppercase;letter-spacing:.4px;background:var(--surface);border-bottom:1px solid var(--border);white-space:nowrap}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:var(--surface2)}
+
+  /* inputs */
+  .ti{width:70px;padding:4px 6px;font-size:12px;font-family:'DM Mono',monospace;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);text-align:center;outline:none}
+  .ti:focus{border-color:var(--accent)}
+  .ti::placeholder{color:var(--text3)}
+  .rb{font-size:11px;padding:3px 8px;border-radius:4px;border:none;cursor:pointer;font-weight:600;transition:all .1s;line-height:1.5}
+  .rb.si{background:var(--green-dim);color:var(--green)}
+  .rb.no{background:var(--surface2);color:var(--text3);border:1px solid var(--border2)}
+  .rb:hover{opacity:.8}
+
+  /* pos badge */
+  .pos{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:11px;font-weight:600}
+  .p1{background:rgba(212,168,67,.2);color:var(--accent)}
+  .p2{background:rgba(160,160,160,.15);color:#aaa}
+  .p3{background:rgba(180,100,30,.2);color:#c87030}
+  .pn{color:var(--text3);font-size:12px}
+
+  /* tags */
+  .tag-si{color:var(--green);font-weight:500}
+  .tag-no{color:var(--text3)}
+  .tag-abs{color:var(--text3);font-style:italic}
+  .pts-val{font-family:'DM Mono',monospace;font-weight:500;color:var(--blue)}
+  .time-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2)}
+
+  /* sub-tabs */
+  .sub-tabs{display:flex;gap:6px;margin-bottom:16px}
+  .stab{padding:5px 12px;border-radius:var(--radius);font-size:12px;color:var(--text3);cursor:pointer;border:1px solid transparent;background:none;transition:all .15s}
+  .stab:hover{color:var(--text);background:var(--surface2)}
+  .stab.act{color:var(--text);background:var(--surface2);border-color:var(--border2)}
+
+  /* race cards grid */
+  .race-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+  .race-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;cursor:pointer;transition:border-color .15s}
+  .race-card:hover{border-color:var(--border2)}
+  .race-card.done{border-color:rgba(62,207,142,.25)}
+  .rc-date{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--accent);margin-bottom:2px}
+  .rc-status{font-size:11px;margin-top:6px}
+  .rc-ok{color:var(--green)}
+  .rc-empty{color:var(--text3)}
+
+  /* toast */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e2126;border:1px solid var(--border2);border-radius:var(--radius);padding:10px 18px;font-size:13px;color:var(--text);opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+  #toast.show{opacity:1}
+
+  /* config overlay */
+  #cfg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+  #cfg.open{display:flex}
+  .cfg-box{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:min(520px,95vw);max-height:90vh;overflow-y:auto}
+  .cfg-box h2{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);margin-bottom:4px}
+  .cfg-box p{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6}
+  .cfg-box label{display:block;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;margin-top:12px}
+  .cfg-box input{width:100%;padding:8px 10px;font-size:12px;font-family:'DM Mono',monospace;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);outline:none}
+  .cfg-box input:focus{border-color:var(--accent)}
+  .cfg-save{margin-top:16px;padding:10px 20px;background:var(--accent);color:#000;font-weight:700;font-size:13px;border:none;border-radius:var(--radius);cursor:pointer;width:100%}
+  .hint{background:var(--surface2);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--text2);margin-top:12px;line-height:1.7}
+  .hint a{color:var(--accent);text-decoration:none}
+  .hint code{font-family:'DM Mono',monospace;font-size:11px;background:rgba(0,0,0,.4);padding:1px 4px;border-radius:3px;color:#e8e9ec}
+
+  /* loading */
+  #loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:300}
+  .spinner{width:28px;height:28px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-txt{font-size:13px;color:var(--text3)}
+
+  /* responsive */
+  @media(max-width:600px){
+    main{padding:16px 12px 60px}
+    .card{padding:14px}
+    .header-inner{gap:8px}
+    .logo{font-size:17px}
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--accent);letter-spacing:2px">Gara All'Annello</div>
+  <div class="spinner"></div>
+  <div class="loading-txt" id="loading-txt">Connessione al database...</div>
+</div>
+
+<div id="cfg">
+  <div class="cfg-box">
+    <h2>Configurazione Firebase</h2>
+    <p>Inserisci le credenziali del tuo progetto Firebase per abilitare i dati condivisi in tempo reale.</p>
+    <div class="hint">
+      <strong style="color:var(--text)">Come ottenere le credenziali:</strong><br>
+      1. Vai su <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a><br>
+      2. Crea un nuovo progetto (gratuito)<br>
+      3. Aggiungi un'app Web (icona <code>&lt;/&gt;</code>)<br>
+      4. Copia i valori da <code>firebaseConfig</code><br>
+      5. In <strong>Realtime Database</strong> → Crea database → Regole → imposta <code>"read": true, "write": true</code>
+    </div>
+    <label>API Key</label>
+    <input id="c_apiKey" placeholder="AIzaSy...">
+    <label>Auth Domain</label>
+    <input id="c_authDomain" placeholder="tuoprogetto.firebaseapp.com">
+    <label>Database URL</label>
+    <input id="c_dbUrl" placeholder="https://tuoprogetto-default-rtdb.europe-west1.firebasedatabase.app">
+    <label>Project ID</label>
+    <input id="c_projectId" placeholder="tuoprogetto">
+    <button class="cfg-save" onclick="saveCfg()">Salva e connetti</button>
+  </div>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">All'Annello 2026</div>
+    <nav class="nav-tabs" id="nav"></nav>
+    <div id="header-actions"></div>
+  </div>
+</header>
+<main id="main"></main>
+<div id="toast"></div>
+
+<!-- Firebase v9 compat -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script>
+const P=[
+  {id:1,name:'TORA PAOLO',horse:''},
+  {id:2,name:"D'EMILIA MARCO",horse:'ARON'},
+  {id:3,name:'LUTERO MASSIMILIANO',horse:''},
+  {id:4,name:'POMPA LEONARDO',horse:'BOLERO'},
+  {id:5,name:'MORELLI SOFIA',horse:'LITTLE SUSY'},
+  {id:6,name:'MARTUFI GIOVANNI',horse:'IRONCASH'},
+  {id:7,name:'GIANSANTI UBALDO',horse:'LANYARD'},
+  {id:8,name:'ALLOCCA ANDREA',horse:'REGINA'},
+  {id:9,name:'MAGLIOZZI AMERIGO',horse:'MALIK'},
+  {id:10,name:'MANUS MARCO',horse:''},
+  {id:11,name:'LATINI MARCO',horse:'COOPER'},
+  {id:12,name:'PALMIERI LUCA',horse:'MENNEA'},
+  {id:13,name:'PALOMBELLI VALENTINO',horse:'OPHELIA'},
+  {id:14,name:'CARPINETI EMANUELE',horse:'LUCY'},
+  {id:15,name:'VITTORI GIUSEPPE',horse:'PIOGGIA'},
+  {id:16,name:'MACALE LUIGI',horse:'NIKITA'},
+  {id:17,name:'ROSSI DIEGO',horse:'GENUINGREY'},
+  {id:18,name:'ORLANDI DANILO',horse:'TOP GAN MAVERY'},
+  {id:19,name:'MAGLIOZZI GIANLUCA',horse:'ZEUS'},
+  {id:20,name:'CAPPELLETTI PINO',horse:"BENALì"},
+  {id:21,name:'BALESTRA METARDO',horse:'RENEGATE'},
+  {id:22,name:'ROGNON GIAMPIERO',horse:'MISS OLLIWOOD'},
+  {id:23,name:'ROGNONI PIERPAOLO',horse:'SPIRIT'},
+  {id:24,name:'OPROIETTI GINMARCO',horse:'MIELE'},
+  {id:25,name:'DE SANTIS ANDREA',horse:'VOLTURNO'},
+  {id:26,name:'DI GIACOMANTONIO MATTEO',horse:'REGINA DEL DESERTO'},
+  {id:27,name:'FIORINI ALESSANDRO',horse:'BARLINK'},
+  {id:28,name:'CIOETA EMANUELE',horse:''},
+  {id:29,name:'CRETARO FABRIZIO',horse:''},
+  {id:30,name:'POMPA EMILIO',horse:'IRON SKIP'},
+  {id:31,name:'PIZZUTI NICO',horse:''},
+  {id:32,name:'BOCCARDELLI ROBERTINO',horse:''},
+  {id:33,name:'SANGIORGI DAMIANO',horse:'OLIMPIA'},
+  {id:34,name:'PELLEGRINI MICHELE',horse:'AP SOGNADOR'},
+  {id:35,name:'FRATTALI MASSIMO',horse:''},
+  {id:36,name:'MATTOZZI MARCO',horse:'WHITE NIGHT'},
+  {id:37,name:'LUDOVISI GIACOMO',horse:'SPARTA'},
+  {id:38,name:'DI CORI ANDREA',horse:''},
+];
+
+const RD=[
+  {id:'19_04',label:'19 Apr',full:'19 Aprile 2026'},
+  {id:'17_05',label:'17 Mag',full:'17 Maggio 2026'},
+  {id:'14_06',label:'14 Giu',full:'14 Giugno 2026'},
+  {id:'04_07',label:'4 Lug',full:'4 Luglio 2026'},
+  {id:'20_09',label:'20 Set',full:'20 Settembre 2026'},
+];
+
+// Pre-loaded data for 19 April
+const R1904=[
+  [1,'4.096','3.812',0,'3.487',0,'4.128',0,'3.665',1,'3.8',0],
+  [2,'3.456','3.315',0,'3.37',0,'3.486',0,'3.378',1,'3.42',1],
+  [3,'3.241','3.115',1,'3.079',1,'3.072',1,'3.108',1,'3.07',0],
+  [4,'3.47','3.362',0,'3.37',0,'3.326',1,'3.314',0,'3.312',1],
+  [5,'3.072','3.071',0,'3.042',0,'3.074',0,'3.055',0,'3.108',1],
+  [6,'3.401','3.313',0,'3.417',0,'3.268',0,'3.282',0,'3.375',0],
+  [7,'3.347','3.297',1,'3.249',1,'3.36',0,'3.326',1,'3.303',0],
+  [8,'3.057','3.041',0,'3.037',0,'3.084',0,'3.062',0,'3.048',0],
+  [9,'3.459','3.375',1,'3.326',0,'3.36',0,'3.348',0,'3.417',1],
+  [10,'4.088','3.347',1,'3.412',0,'3.411',1,'3.353',0,'3.388',0],
+  [11,'3.28','3.174',0,'3.318',0,'3.258',0,'3.296',0,'3.297',0],
+  [12,'3.366','3.387',0,'3.393',0,'3.398',0,'3.423',0,'3.469',0],
+  [13,'3.172','3.105',0,'3.191',0,'3.235',1,'3.272',0,'3.187',0],
+  [14,'3.18','3.264',1,'3.337',1,'3.319',1,'3.309',1,'3.316',1],
+  [15,'3.128','3.1',0,'3.116',1,'3.107',1,'3.184',0,'3.205',0],
+  [16,'3.385','3.208',0,'3.283',0,'3.288',0,'3.251',0,'3.34',0],
+  [17,'3.55','3.396',0,'3.602',1,'3.543',0,'3.602',0,'3.716',0],
+  [18,'3.281','3.344',1,'3.428',0,'3.298',1,'3.294',1,'3.25',0],
+  [19,'3.397','3.345',0,'3.277',1,'3.273',0,'3.277',0,'3.29',0],
+  [20,'4.196','4.441',1,'4.104',0,'4.095',0,'4.416',0,'4.004',0],
+  [21,'5.063','4.559',0,'4.5',0,'4.396',0,'4.419',0,'',0],
+  [22,'3.122','3.158',0,'3.021',1,'3.012',0,'3.035',1,'3',0],
+  [23,'3.729','3.526',1,'3.427',0,'3.527',1,'3.454',1,'3.354',1],
+  [24,'3.131','3.023',0,'3.062',0,'3.124',0,'3.094',0,'3.142',0],
+  [25,'3.5','3.576',1,'3.627',0,'3.375',0,'3.599',0,'3.619',1],
+  [26,'3.472','3.289',0,'3.234',0,'3.237',0,'3.234',0,'3.3',0],
+];
+
+const POINTS=[15,12,10,8,7,6,5,4,3,2,1];
+
+let db=null, S={view:'home',race:'19_04',raceTab:'classifica',editMode:false}, gdata={}, dirty=false, saveTimer=null;
+
+function emptyEntry(){return{bp:'',b:[{t:'',r:false},{t:'',r:false},{t:'',r:false},{t:'',r:false},{t:'',r:false}]};}
+
+function defaultData(){
+  const d={};
+  const lu={};
+  R1904.forEach(r=>{
+    lu[r[0]]={bp:r[1],b:[{t:r[2],r:!!r[3]},{t:r[4],r:!!r[5]},{t:r[6],r:!!r[7]},{t:r[8],r:!!r[9]},{t:r[10],r:!!r[11]}]};
+  });
+  RD.forEach(rd=>{
+    d[rd.id]={};
+    P.forEach(p=>{d[rd.id][p.id]=rd.id==='19_04'&&lu[p.id]?JSON.parse(JSON.stringify(lu[p.id])):emptyEntry();});
+  });
+  return d;
+}
+
+// Firebase config from localStorage
+function getCfg(){try{return JSON.parse(localStorage.getItem('fbcfg')||'null');}catch{return null;}}
+function saveCfg(){
+  const cfg={
+    apiKey:document.getElementById('c_apiKey').value.trim(),
+    authDomain:document.getElementById('c_authDomain').value.trim(),
+    databaseURL:document.getElementById('c_dbUrl').value.trim(),
+    projectId:document.getElementById('c_projectId').value.trim(),
+  };
+  if(!cfg.apiKey||!cfg.databaseURL){toast('Compila tutti i campi obbligatori');return;}
+  localStorage.setItem('fbcfg',JSON.stringify(cfg));
+  document.getElementById('cfg').classList.remove('open');
+  initFirebase(cfg);
+}
+
+function initFirebase(cfg){
+  document.getElementById('loading-txt').textContent='Connessione a Firebase...';
+  document.getElementById('loading').style.display='flex';
+  try{
+    if(firebase.apps.length)firebase.app().delete();
+    firebase.initializeApp(cfg);
+    db=firebase.database();
+    const ref=db.ref('gara2026');
+    ref.once('value',snap=>{
+      const val=snap.val();
+      if(val){gdata=val;}
+      else{gdata=defaultData();ref.set(gdata);}
+      // real-time listener
+      ref.on('value',s=>{
+        const v=s.val();
+        if(v){gdata=v;if(!dirty)render();}
+      });
+      hideCfg();
+      document.getElementById('loading').style.display='none';
+      render();
+    },err=>{
+      document.getElementById('loading').style.display='none';
+      toast('Errore connessione: '+err.message);
+    });
+  }catch(e){
+    document.getElementById('loading').style.display='none';
+    toast('Errore Firebase: '+e.message);
+  }
+}
+
+function hideCfg(){document.getElementById('cfg').classList.remove('open');}
+function showCfg(){
+  const cfg=getCfg();
+  if(cfg){
+    document.getElementById('c_apiKey').value=cfg.apiKey||'';
+    document.getElementById('c_authDomain').value=cfg.authDomain||'';
+    document.getElementById('c_dbUrl').value=cfg.databaseURL||'';
+    document.getElementById('c_projectId').value=cfg.projectId||'';
+  }
+  document.getElementById('cfg').classList.add('open');
+}
+
+function autosave(){
+  if(!db)return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    db.ref('gara2026').set(gdata).then(()=>{dirty=false;toast('Salvato ✓');}).catch(e=>toast('Errore salvataggio'));
+  },800);
+}
+
+// Stats
+function stats(entry){
+  if(!entry)return{rings:0,media:null,minore:null};
+  const valid=entry.b.filter(b=>b.t!==''&&b.t!=null);
+  if(!valid.length)return{rings:0,media:null,minore:null};
+  const times=valid.map(b=>parseFloat(b.t)).filter(t=>!isNaN(t));
+  if(!times.length)return{rings:0,media:null,minore:null};
+  return{rings:valid.filter(b=>b.r).length,media:times.reduce((s,t)=>s+t,0)/times.length,minore:Math.min(...times)};
+}
+
+function rankRace(rid){
+  const riders=P.map(p=>{
+    const e=gdata?.[rid]?.[p.id];
+    return{...p,entry:e||emptyEntry(),...stats(e)};
+  });
+  const w=riders.filter(r=>r.media!==null);
+  const n=riders.filter(r=>r.media===null);
+  w.sort((a,b)=>{if(b.rings!==a.rings)return b.rings-a.rings;if(a.minore!==b.minore)return a.minore-b.minore;return a.media-b.media;});
+  return[...w.map((r,i)=>({...r,pos:i+1,pts:POINTS[i]||0})),...n.map(r=>({...r,pos:null,pts:0}))];
+}
+
+function generale(){
+  const tot={};
+  P.forEach(p=>{tot[p.id]={...p,perRace:{},total:0};});
+  RD.forEach(rd=>{rankRace(rd.id).forEach(r=>{if(tot[r.id]){tot[r.id].perRace[rd.id]=r.pts;tot[r.id].total+=r.pts;}});});
+  return Object.values(tot).sort((a,b)=>b.total-a.total).map((p,i)=>({...p,pos:p.total>0?i+1:null}));
+}
+
+function fmt(n,d=4){return n===null?'—':n.toFixed(d);}
+function completedRaces(){return RD.filter(rd=>P.some(p=>gdata?.[rd.id]?.[p.id]?.b.some(b=>b.t!=='')));}
+
+function posBadge(pos){
+  if(!pos)return`<span class="pn">—</span>`;
+  const c=pos===1?'p1':pos===2?'p2':pos===3?'p3':'';
+  return`<span class="pos ${c}">${pos}</span>`;
+}
+
+// Render
+function render(){
+  renderNav();
+  let html='';
+  if(S.view==='home')html=buildHome();
+  else if(S.view==='partecipanti')html=buildPartecipanti();
+  else if(S.view==='race')html=buildRace();
+  else if(S.view==='generale')html=buildGenerale();
+  document.getElementById('main').innerHTML=html;
+  renderHeaderActions();
+}
+
+function renderNav(){
+  const races=RD.map(rd=>`<button class="tab ${S.view==='race'&&S.race===rd.id?'act':''}" onclick="goRace('${rd.id}')">${rd.label}</button>`).join('');
+  document.getElementById('nav').innerHTML=`
+    <button class="tab ${S.view==='home'?'act':''}" onclick="go('home')">Home</button>
+    <button class="tab ${S.view==='partecipanti'?'act':''}" onclick="go('partecipanti')">Cavalieri</button>
+    ${races}
+    <button class="tab ${S.view==='generale'?'act':''}" onclick="go('generale')">Generale</button>
+    <button class="tab" onclick="showCfg()" title="Impostazioni Firebase" style="color:var(--text3)">⚙</button>
+  `;
+}
+
+function renderHeaderActions(){
+  let html='';
+  if(S.view==='race'&&S.raceTab==='dati'){
+    if(S.editMode){
+      html=`<button class="save-btn" onclick="saveEdit()">Salva</button>
+            <button class="edit-btn" onclick="cancelEdit()" style="margin-left:6px">✕</button>`;
+    }else{
+      html=`<button class="edit-btn" onclick="startEdit()">Modifica dati</button>`;
+    }
+  }
+  document.getElementById('header-actions').innerHTML=html;
+}
+
+function buildHome(){
+  const done=completedRaces();
+  const gen=generale().filter(p=>p.total>0);
+  const top3=gen.slice(0,3);
+  const leader=gen[0];
+  return`<div>
+    <div style="margin-bottom:20px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--text);line-height:1;margin-bottom:4px">Stagione 2026</div>
+      <div style="font-size:13px;color:var(--text3)">${done.length} di 5 gare disputate · ${P.length} cavalieri iscritti</div>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="metric-val">${P.length}</div><div class="metric-lbl">Cavalieri</div></div>
+      <div class="metric"><div class="metric-val">${done.length}/5</div><div class="metric-lbl">Gare disputate</div></div>
+      <div class="metric"><div class="metric-val" style="font-size:18px;line-height:1.4">${leader?leader.name.split(' ').slice(-1)[0]:'—'}</div><div class="metric-lbl">Leader</div></div>
+      <div class="metric"><div class="metric-val">${leader?leader.total:'0'}</div><div class="metric-lbl">Punti leader</div></div>
+    </div>
+    ${top3.length?`<div class="card" style="margin-bottom:20px">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Top 3 Classifica Generale</div>
+      ${top3.map((p,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:${i<2?'1px solid var(--border)':'none'}">
+        ${posBadge(i+1)}
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:500">${p.name}</div>
+          <div style="font-size:11px;color:var(--text3)">${p.horse||'—'}</div>
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent)">${p.total}</div>
+      </div>`).join('')}
+    </div>`:''}
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Gare in calendario</div>
+    <div class="race-grid">
+      ${RD.map(rd=>{
+        const d=P.some(p=>gdata?.[rd.id]?.[p.id]?.b.some(b=>b.t!==''));
+        return`<div class="race-card ${d?'done':''}" onclick="goRace('${rd.id}')">
+          <div class="rc-date">${rd.label}</div>
+          <div style="font-size:13px;color:var(--text2)">${rd.full}</div>
+          <div class="rc-status ${d?'rc-ok':'rc-empty'}">${d?'✓ Dati inseriti':'In attesa'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function buildPartecipanti(){
+  return`<div>
+    <div style="font-size:22px;font-family:'Bebas Neue',sans-serif;margin-bottom:16px">Cavalieri Iscritti (${P.length})</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>#</th><th>Cavaliere</th><th>Cavallo</th></tr></thead>
+      <tbody>${P.map(p=>`<tr>
+        <td style="color:var(--text3);font-size:11px;font-family:'DM Mono',monospace">${p.id}</td>
+        <td style="font-weight:500">${p.name}</td>
+        <td style="color:var(--text3)">${p.horse||'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+  </div>`;
+}
+
+function buildRace(){
+  const rd=RD.find(r=>r.id===S.race);
+  const tabs=`<div class="sub-tabs">
+    <button class="stab ${S.raceTab==='classifica'?'act':''}" onclick="setRaceTab('classifica')">Classifica</button>
+    <button class="stab ${S.raceTab==='dati'?'act':''}" onclick="setRaceTab('dati')">Inserimento dati</button>
+  </div>`;
+  const ranked=rankRace(S.race);
+
+  if(S.raceTab==='classifica'){
+    const w=ranked.filter(r=>r.pos!==null);
+    const n=ranked.filter(r=>r.pos===null);
+    return`<div>
+      <div style="font-size:22px;font-family:'Bebas Neue',sans-serif;margin-bottom:16px">${rd.full}</div>
+      ${tabs}
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Pos</th><th>Cavaliere</th><th>Cavallo</th><th>Anelli</th><th>Media</th><th>Min</th><th>Punti</th></tr></thead>
+        <tbody>
+          ${w.map(r=>`<tr>
+            <td>${posBadge(r.pos)}</td>
+            <td style="font-weight:${r.pos<=3?600:400}">${r.name}</td>
+            <td style="color:var(--text3);font-size:12px">${r.horse||'—'}</td>
+            <td><span style="font-size:16px;font-weight:600;color:${r.rings>0?'var(--green)':'var(--text3)'}">${r.rings}</span></td>
+            <td class="time-val">${fmt(r.media,4)}</td>
+            <td class="time-val">${fmt(r.minore,3)}</td>
+            <td class="pts-val">${r.pts||'—'}</td>
+          </tr>`).join('')}
+          ${n.length?`<tr><td colspan="7" style="color:var(--text3);font-size:11px;text-align:center;padding:12px">+ ${n.length} cavalieri senza dati</td></tr>`:''}
+        </tbody>
+      </table></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px">Ordine: anelli (↓), tempo minore (↑), media tempi (↑)</div>
+    </div>`;
+  }
+
+  // Dati tab
+  const edit=S.editMode;
+  return`<div>
+    <div style="font-size:22px;font-family:'Bebas Neue',sans-serif;margin-bottom:16px">${rd.full}</div>
+    ${tabs}
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th>#</th><th style="min-width:150px">Cavaliere</th><th>Cavallo</th>
+        <th>B.Prova</th>
+        <th>Bat.1</th><th>Bat.2</th><th>Bat.3</th><th>Bat.4</th><th>Bat.5</th>
+        <th>Anelli</th><th>Media</th><th>Min</th><th>Pos</th>
+      </tr></thead>
+      <tbody>
+        ${ranked.map(r=>{
+          const st=stats(r.entry);
+          const bpC=edit
+            ?`<td><input class="ti" type="number" step="0.001" min="1" max="20" value="${r.entry.bp}" onchange="setBP('${S.race}',${r.id},this.value)" placeholder="—"></td>`
+            :`<td class="time-val tag-abs">${r.entry.bp||'/'}</td>`;
+          const bCells=r.entry.b.map((b,bi)=>{
+            if(edit){
+              return`<td style="white-space:nowrap">
+                <input class="ti" type="number" step="0.001" min="1" max="20" value="${b.t}" onchange="setTime('${S.race}',${r.id},${bi},this.value)" placeholder="—">
+                <button class="rb ${b.r?'si':'no'}" onclick="toggleRing('${S.race}',${r.id},${bi})">${b.r?'SI':'NO'}</button>
+              </td>`;
+            }
+            if(b.t==='')return`<td class="tag-abs">/</td>`;
+            return`<td class="time-val ${b.r?'tag-si':'tag-no'}">${b.t}${b.r?' ●':''}</td>`;
+          }).join('');
+          return`<tr>
+            <td style="color:var(--text3);font-size:11px;font-family:'DM Mono',monospace">${r.id}</td>
+            <td style="font-weight:${r.pos&&r.pos<=3?600:400}">${r.name}</td>
+            <td style="color:var(--text3);font-size:12px">${r.horse||'—'}</td>
+            ${bpC}${bCells}
+            <td style="font-size:15px;font-weight:600;color:${st.rings>0?'var(--green)':'var(--text3)'}">${st.media!==null?st.rings:'—'}</td>
+            <td class="time-val">${fmt(st.media,4)}</td>
+            <td class="time-val">${fmt(st.minore,3)}</td>
+            <td>${posBadge(r.pos)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table></div>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px">● = anello preso. I campi accettano tempi in secondi (es. 3.297).</div>
+  </div>`;
+}
+
+function buildGenerale(){
+  const g=generale();
+  const done=completedRaces();
+  return`<div>
+    <div style="font-size:22px;font-family:'Bebas Neue',sans-serif;margin-bottom:4px">Classifica Generale</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Stagione 2026 · ${done.length}/5 gare · Sistema punti: 1°=15, 2°=12, 3°=10, 4°=8, 5°=7, 6°=6, 7°=5, 8°=4, 9°=3, 10°=2, 11°=1</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th>Pos</th><th>Cavaliere</th><th>Cavallo</th>
+        ${RD.map(rd=>`<th>${rd.label}</th>`).join('')}
+        <th>Totale</th>
+      </tr></thead>
+      <tbody>${g.map(p=>`<tr>
+        <td>${posBadge(p.pos)}</td>
+        <td style="font-weight:${p.pos&&p.pos<=3?600:400}">${p.name}</td>
+        <td style="color:var(--text3);font-size:12px">${p.horse||'—'}</td>
+        ${RD.map(rd=>{
+          const pt=p.perRace[rd.id]||0;
+          return`<td class="${pt>0?'pts-val':'tag-abs'}">${pt||'—'}</td>`;
+        }).join('')}
+        <td style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${p.total>0?'var(--accent)':'var(--text3)'}">${p.total||'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+  </div>`;
+}
+
+// Actions
+function go(v){S.view=v;S.editMode=false;render();}
+function goRace(id){S.view='race';S.race=id;render();}
+function setRaceTab(t){S.raceTab=t;render();}
+function startEdit(){S.editMode=true;render();}
+function cancelEdit(){S.editMode=false;render();}
+function saveEdit(){if(db){db.ref('gara2026').set(gdata).then(()=>{dirty=false;toast('Salvato ✓');});}S.editMode=false;render();}
+
+function setTime(rid,pid,bi,val){
+  if(!gdata[rid])gdata[rid]={};
+  if(!gdata[rid][pid])gdata[rid][pid]=emptyEntry();
+  gdata[rid][pid].b[bi].t=val;
+  dirty=true;autosave();render();
+}
+function setBP(rid,pid,val){
+  if(!gdata[rid])gdata[rid]={};
+  if(!gdata[rid][pid])gdata[rid][pid]=emptyEntry();
+  gdata[rid][pid].bp=val;dirty=true;autosave();
+}
+function toggleRing(rid,pid,bi){
+  if(!gdata[rid])gdata[rid]={};
+  if(!gdata[rid][pid])gdata[rid][pid]=emptyEntry();
+  gdata[rid][pid].b[bi].r=!gdata[rid][pid].b[bi].r;
+  dirty=true;autosave();render();
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// Init
+window.addEventListener('load',()=>{
+  const cfg=getCfg();
+  if(cfg&&cfg.apiKey&&cfg.databaseURL){
+    initFirebase(cfg);
+  }else{
+    document.getElementById('loading').style.display='none';
+    document.getElementById('loading-txt').textContent='';
+    // Use local data
+    gdata=defaultData();
+    render();
+    toast('Firebase non configurato — dati in locale');
+  }
+});
+</script>
+</body>
+</html>
