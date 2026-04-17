@@ -213,7 +213,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script>
-const P=[
+let P=[
   {id:1,name:'TORA PAOLO',horse:''},
   {id:2,name:"D'EMILIA MARCO",horse:'ARON'},
   {id:3,name:'LUTERO MASSIMILIANO',horse:''},
@@ -264,7 +264,8 @@ const RD=[
 
 const POINTS=[15,12,10,8,7,6,5,4,3,2,1];
 
-let db=null, S={view:'home',race:'19_04',raceTab:'classifica',editMode:false}, gdata={}, dirty=false, saveTimer=null;
+let db=null, S={view:'home',race:'19_04',raceTab:'classifica',editMode:false,pEditMode:false}, gdata={}, dirty=false, saveTimer=null;
+let pTemp=[]; // buffer per modifiche cavalieri non ancora salvate
 
 function emptyEntry(){return{bp:'',b:[{t:'',r:false},{t:'',r:false},{t:'',r:false},{t:'',r:false},{t:'',r:false}]};}
 
@@ -300,18 +301,23 @@ function initFirebase(cfg){
     firebase.initializeApp(cfg);
     db=firebase.database();
     const ref=db.ref('gara2026');
+    const ridersRef=db.ref('riders');
+    // load races
     ref.once('value',snap=>{
       const val=snap.val();
       if(val){gdata=val;}
       else{gdata=defaultData();ref.set(gdata);}
-      // real-time listener
-      ref.on('value',s=>{
-        const v=s.val();
-        if(v){gdata=v;if(!dirty)render();}
+      // load riders
+      ridersRef.once('value',rsnap=>{
+        const rv=rsnap.val();
+        if(rv&&Array.isArray(rv)&&rv.length){P=rv;}
+        // real-time listeners
+        ref.on('value',s=>{const v=s.val();if(v){gdata=v;if(!dirty)render();}});
+        ridersRef.on('value',s=>{const v=s.val();if(v&&Array.isArray(v)&&v.length&&!S.pEditMode){P=v;render();}});
+        hideCfg();
+        document.getElementById('loading').style.display='none';
+        render();
       });
-      hideCfg();
-      document.getElementById('loading').style.display='none';
-      render();
     },err=>{
       document.getElementById('loading').style.display='none';
       toast('Errore connessione: '+err.message);
@@ -404,8 +410,11 @@ function renderNav(){
 
 function renderHeaderActions(){
   let html='';
-  if(currentUser && !S.editMode){
-    html=`<div class="user-badge"><span>${currentUser}</span><button class="logout-btn" onclick="logout()">Esci</button></div>`;
+  // partecipanti edit handled inline — just show user badge if logged in and not in race edit
+  if(currentUser && S.view!=='race'){
+    if(!S.pEditMode){
+      html=`<div class="user-badge"><span>${currentUser}</span><button class="logout-btn" onclick="logout()">Esci</button></div>`;
+    }
   }
   if(S.view==='race'&&S.raceTab==='dati'){
     if(S.editMode){
@@ -467,16 +476,51 @@ function buildHome(){
 }
 
 function buildPartecipanti(){
+  const list = S.pEditMode ? pTemp : P;
+  const editHdr = S.pEditMode
+    ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <div style="font-size:22px;font-family:'Bebas Neue',sans-serif;flex:1">Cavalieri Iscritti (${list.length})</div>
+        <div class="user-badge">Modalità modifica · <span>${currentUser}</span></div>
+        <button class="save-btn" onclick="savePEdit()">Salva</button>
+        <button class="edit-btn" onclick="cancelPEdit()">✕ Annulla</button>
+      </div>`
+    : `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <div style="font-size:22px;font-family:'Bebas Neue',sans-serif;flex:1">Cavalieri Iscritti (${list.length})</div>
+        <button class="edit-btn" onclick="startPEdit()">Modifica lista</button>
+      </div>`;
+
+  if(!S.pEditMode){
+    return`<div>
+      ${editHdr}
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>Cavaliere</th><th>Cavallo</th></tr></thead>
+        <tbody>${list.map(p=>`<tr>
+          <td style="color:var(--text3);font-size:11px;font-family:'DM Mono',monospace">${p.id}</td>
+          <td style="font-weight:500">${p.name||'—'}</td>
+          <td style="color:var(--text3)">${p.horse||'—'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+  }
+
+  // Edit mode
   return`<div>
-    <div style="font-size:22px;font-family:'Bebas Neue',sans-serif;margin-bottom:16px">Cavalieri Iscritti (${P.length})</div>
+    ${editHdr}
     <div class="tbl-wrap"><table>
-      <thead><tr><th>#</th><th>Cavaliere</th><th>Cavallo</th></tr></thead>
-      <tbody>${P.map(p=>`<tr>
-        <td style="color:var(--text3);font-size:11px;font-family:'DM Mono',monospace">${p.id}</td>
-        <td style="font-weight:500">${p.name}</td>
-        <td style="color:var(--text3)">${p.horse||'—'}</td>
-      </tr>`).join('')}</tbody>
+      <thead><tr><th style="width:36px">#</th><th>Cavaliere</th><th>Cavallo</th><th style="width:40px"></th></tr></thead>
+      <tbody id="p-tbody">
+        ${list.map((p,i)=>`<tr id="pr-${i}">
+          <td style="color:var(--text3);font-size:11px;font-family:'DM Mono',monospace">${p.id}</td>
+          <td><input class="ti" style="width:100%;max-width:200px" type="text" value="${p.name||''}" placeholder="Nome Cognome" oninput="setPName(${i},this.value)"></td>
+          <td><input class="ti" style="width:100%;max-width:160px" type="text" value="${p.horse||''}" placeholder="Nome cavallo" oninput="setPHorse(${i},this.value)"></td>
+          <td><button onclick="removeRider(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:2px 6px" title="Rimuovi">×</button></td>
+        </tr>`).join('')}
+      </tbody>
     </table></div>
+    <button onclick="addRider()" style="margin-top:12px;display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius);border:1px dashed var(--border2);background:none;color:var(--text2);cursor:pointer;font-size:13px;transition:all .15s" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--text2)';this.style.borderColor='var(--border2)'">
+      <span style="font-size:18px;line-height:1">+</span> Aggiungi cavaliere
+    </button>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px">Le modifiche vengono salvate solo dopo aver cliccato <strong style="color:var(--text2)">Salva</strong>.</div>
   </div>`;
 }
 
@@ -589,8 +633,8 @@ function buildGenerale(){
 // Per generare un hash: https://emn178.github.io/online-tools/sha256.html
 // Utenti predefiniti:  admin / annello2026   |   giudice / gara2026
 const USERS = {
-  'gianni':   '955c0532cc18f17542971e4864a19c08dd48f60c55f44fbb1964ad63bde78f93', // annello2026
-  'silvana': '152a2c2e6d63e571225624998db96b605cddeb92ecf2720dc1dedfe124e02bcb', // gara2026
+  'admin':   '3f281b761df108e836ad0f0f8572d09f55330835437b586e3a6cfaa556ae5e6b', // annello2026
+  'giudice': 'fc0796a69100f2a040eb62e259436b5352e81a9bf07ca297c274cc4263f24b0f', // gara2026
 };
 
 let currentUser = null;
@@ -632,12 +676,48 @@ function logout(){currentUser=null;S.editMode=false;render();toast('Disconnesso'
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Actions
-function go(v){S.view=v;S.editMode=false;render();}
-function goRace(id){S.view='race';S.race=id;render();}
+function go(v){S.view=v;S.editMode=false;S.pEditMode=false;render();}
+function goRace(id){S.view='race';S.race=id;S.pEditMode=false;render();}
 function setRaceTab(t){S.raceTab=t;render();}
 function startEdit(){if(currentUser){S.editMode=true;render();}else{openLogin();}}
 function cancelEdit(){S.editMode=false;render();}
 function saveEdit(){if(db){db.ref('gara2026').set(gdata).then(()=>{dirty=false;toast('Salvato ✓');});}S.editMode=false;render();}
+
+// Partecipanti edit
+function startPEdit(){
+  if(!currentUser){openLogin();return;}
+  pTemp=JSON.parse(JSON.stringify(P)); // deep copy
+  S.pEditMode=true;render();
+}
+function cancelPEdit(){S.pEditMode=false;pTemp=[];render();}
+function savePEdit(){
+  // clean up empty entries
+  pTemp=pTemp.filter(p=>p.name&&p.name.trim()!=='');
+  // reassign IDs sequentially
+  pTemp=pTemp.map((p,i)=>({...p,id:i+1}));
+  P=JSON.parse(JSON.stringify(pTemp));
+  S.pEditMode=false;pTemp=[];
+  if(db){db.ref('riders').set(P).then(()=>toast('Cavalieri salvati ✓')).catch(()=>toast('Errore salvataggio'));}
+  else{toast('Cavalieri aggiornati (nessun Firebase)');}
+  render();
+}
+function setPName(i,val){pTemp[i].name=val.toUpperCase();}
+function setPHorse(i,val){pTemp[i].horse=val.toUpperCase();}
+function addRider(){
+  const newId=pTemp.length?Math.max(...pTemp.map(p=>p.id))+1:1;
+  pTemp.push({id:newId,name:'',horse:''});
+  render();
+  // focus the new name input after render
+  setTimeout(()=>{
+    const rows=document.querySelectorAll('#p-tbody tr');
+    if(rows.length){const inp=rows[rows.length-1].querySelector('input');if(inp)inp.focus();}
+  },50);
+}
+function removeRider(i){
+  if(pTemp.length<=1){toast('Devi avere almeno un cavaliere');return;}
+  if(!confirm(`Rimuovere "${pTemp[i].name||'questo cavaliere'}"?`))return;
+  pTemp.splice(i,1);render();
+}
 
 function setTime(rid,pid,bi,val){
   if(!gdata[rid])gdata[rid]={};
