@@ -21,7 +21,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .save-btn:hover{opacity:.85}
 .edit-btn{padding:6px 12px;border-radius:var(--radius);font-size:12px;font-weight:500;color:var(--text2);background:var(--surface2);cursor:pointer;border:1px solid var(--border2)}
 .edit-btn:hover{color:var(--text)}
-.icon-btn{padding:5px 8px;border-radius:var(--radius);font-size:13px;color:var(--text3);background:none;cursor:pointer;border:1px solid var(--border2)}
+.icon-btn{padding:5px 9px;border-radius:var(--radius);font-size:12px;color:var(--text3);background:none;cursor:pointer;border:1px solid var(--border2);white-space:nowrap}
 .icon-btn:hover{color:var(--text);border-color:var(--border)}
 main{max-width:1200px;margin:0 auto;padding:24px 24px 80px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
@@ -64,6 +64,7 @@ tbody tr:hover td{background:var(--surface2)}
 .rc-status{font-size:11px;margin-top:6px}
 .rc-ok{color:var(--green)}
 .rc-empty{color:var(--text3)}
+.export-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e2126;border:1px solid var(--border2);border-radius:var(--radius);padding:10px 18px;font-size:13px;color:var(--text);opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
 #toast.show{opacity:1}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
@@ -89,7 +90,9 @@ tbody tr:hover td{background:var(--surface2)}
 .drag-handle{cursor:grab;color:var(--text3);padding:0 6px;user-select:none;font-size:18px}
 .drag-handle:active{cursor:grabbing}
 .sortable-ghost{opacity:.3}
-@media(max-width:600px){main{padding:16px 12px 80px}.card{padding:14px}}
+.bat-name-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.bat-name-grid input{padding:6px 8px;font-size:12px}
+@media(max-width:600px){main{padding:16px 12px 80px}.card{padding:14px}.bat-name-grid{grid-template-columns:1fr}}
 
 /* ── PRINT ── */
 @media print{
@@ -115,10 +118,11 @@ tbody tr:hover td{background:var(--surface2)}
 </head>
 <body>
 
+<!-- LOADING -->
 <div id="loading">
-  <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--accent);letter-spacing:2px">Gara All'Annello</div>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--accent);letter-spacing:2px">Gara All'Annello 2026</div>
   <div class="spinner"></div>
-  <div style="font-size:13px;color:var(--text3)" id="loading-txt">Caricamento...</div>
+  <div style="font-size:13px;color:var(--text3)" id="loading-txt">Connessione al database...</div>
 </div>
 
 <!-- LOGIN -->
@@ -136,34 +140,21 @@ tbody tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
-<!-- FIREBASE CONFIG -->
-<div id="cfg-overlay" class="overlay">
-  <div class="modal">
-    <h2>Configurazione Firebase</h2>
-    <p>Inserisci le credenziali del tuo progetto Firebase per sincronizzare i dati in tempo reale.</p>
-    <div class="hint">1. <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → nuovo progetto<br>2. Aggiungi app Web → copia <code>firebaseConfig</code><br>3. Realtime Database → Regole → <code>"read":true,"write":true</code></div>
-    <label>API Key</label><input id="c_apiKey" placeholder="AIzaSy...">
-    <label>Auth Domain</label><input id="c_authDomain" placeholder="progetto.firebaseapp.com">
-    <label>Database URL</label><input id="c_dbUrl" placeholder="https://progetto-rtdb.europe-west1.firebasedatabase.app">
-    <label>Project ID</label><input id="c_projectId" placeholder="nome-progetto">
-    <button class="modal-btn" onclick="saveCfg()">Salva e connetti</button>
-    <button class="modal-cancel" onclick="document.getElementById('cfg-overlay').classList.remove('open')">Annulla</button>
-  </div>
-</div>
-
 <!-- ADD/EDIT RACE MODAL -->
 <div id="race-modal" class="overlay">
-  <div class="modal" style="width:min(420px,95vw)">
+  <div class="modal">
     <h2 id="race-modal-title">Nuova Tappa</h2>
-    <label>Data per esteso (es. 19 Aprile 2026)</label>
+    <label>Data per esteso</label>
     <input id="rm_full" placeholder="19 Aprile 2026">
-    <label>Etichetta breve (es. 19 Apr)</label>
+    <label>Etichetta breve</label>
     <input id="rm_label" placeholder="19 Apr">
     <label>Numero di batterie</label>
-    <input id="rm_bat" type="number" min="1" max="10" value="5">
+    <input id="rm_bat" type="number" min="1" max="12" value="6" oninput="updateBatNameFields()">
+    <label>Nomi batterie</label>
+    <div id="bat-name-fields" class="bat-name-grid"></div>
     <label>Punti per posizione (separati da virgola)</label>
     <input id="rm_pts" placeholder="15,12,10,8,7,6,5,4,3,2,1">
-    <div style="font-size:11px;color:var(--text3);margin-top:6px">Il 1° classificato riceve il primo valore, il 2° il secondo, ecc.</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:4px">Il 1° riceve il primo valore, il 2° il secondo, ecc.</div>
     <button class="modal-btn" onclick="saveRaceModal()">Salva Tappa</button>
     <button class="modal-cancel" onclick="closeRaceModal()">Annulla</button>
   </div>
@@ -184,7 +175,7 @@ tbody tr:hover td{background:var(--surface2)}
 
 <!-- PDF MODAL -->
 <div id="pdf-modal" class="overlay">
-  <div class="modal" style="width:min(380px,95vw)">
+  <div class="modal" style="width:min(400px,95vw)">
     <h2>Esporta PDF</h2>
     <p id="pdf-modal-sub" style="color:var(--accent)"></p>
     <div id="pdf-options" style="margin:12px 0"></div>
@@ -232,12 +223,40 @@ tbody tr:hover td{background:var(--surface2)}
 <div id="print-area"></div>
 <div id="toast"></div>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<!-- SortableJS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<!-- SheetJS for XLSX -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <script>
-// ═══════════════════ DATA ═══════════════════
-let P=[
+// ═══════════════════ FIREBASE CONFIG ═══════════════════
+const FB_CONFIG = {
+  apiKey: "AIzaSyA3ReHp_8SoT1spOg4Vr4pFB5cDL3HmUWI",
+  authDomain: "anelloartena2026.firebaseapp.com",
+  databaseURL: "https://anelloartena2026-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "anelloartena2026",
+  storageBucket: "anelloartena2026.firebasestorage.app",
+  messagingSenderId: "547716432607",
+  appId: "1:547716432607:web:ebd5751b7687b1a31f9f6a",
+  measurementId: "G-E3VK0WPYNE"
+};
+
+// ═══════════════════ AUTH ═══════════════════
+// Per aggiungere utenti: genera hash su https://emn178.github.io/online-tools/sha256.html
+// admin = annello2026 | giudice = gara2026
+const USERS = {
+  'admin':   '3f281b761df108e836ad0f0f8572d09f55330835437b586e3a6cfaa556ae5e6b',
+  'giudice': 'fc0796a69100f2a040eb62e259436b5352e81a9bf07ca297c274cc4263f24b0f'
+};
+
+// ═══════════════════ DEFAULT DATA ═══════════════════
+const DEF_PTS = [15,12,10,8,7,6,5,4,3,2,1];
+const DEF_BAT_NAMES = (n) => Array.from({length:n}, (_,i) => i===n-1 && n===6 ? 'Spareggio' : `Batteria ${i+1}`);
+
+let P = [
   {id:1,name:'TORA PAOLO',horse:''},{id:2,name:"D'EMILIA MARCO",horse:'ARON'},
   {id:3,name:'LUTERO MASSIMILIANO',horse:''},{id:4,name:'POMPA LEONARDO',horse:'BOLERO'},
   {id:5,name:'MORELLI SOFIA',horse:'LITTLE SUSY'},{id:6,name:'MARTUFI GIOVANNI',horse:'IRONCASH'},
@@ -259,14 +278,12 @@ let P=[
   {id:37,name:'LUDOVISI GIACOMO',horse:'SPARTA'},{id:38,name:'DI CORI ANDREA',horse:''},
 ];
 
-const DEF_PTS=[15,12,10,8,7,6,5,4,3,2,1];
-
-let RD=[
-  {id:'19_04',label:'19 Apr',full:'19 Aprile 2026',batteries:5,points:[...DEF_PTS],startingOrder:[]},
-  {id:'17_05',label:'17 Mag',full:'17 Maggio 2026',batteries:5,points:[...DEF_PTS],startingOrder:[]},
-  {id:'14_06',label:'14 Giu',full:'14 Giugno 2026',batteries:5,points:[...DEF_PTS],startingOrder:[]},
-  {id:'04_07',label:'4 Lug',full:'4 Luglio 2026',batteries:5,points:[...DEF_PTS],startingOrder:[]},
-  {id:'20_09',label:'20 Set',full:'20 Settembre 2026',batteries:5,points:[...DEF_PTS],startingOrder:[]},
+let RD = [
+  {id:'19_04',label:'19 Apr',full:'19 Aprile 2026',  batteries:6,batteryNames:DEF_BAT_NAMES(6),points:[...DEF_PTS],startingOrder:[]},
+  {id:'17_05',label:'17 Mag',full:'17 Maggio 2026',  batteries:6,batteryNames:DEF_BAT_NAMES(6),points:[...DEF_PTS],startingOrder:[]},
+  {id:'14_06',label:'14 Giu',full:'14 Giugno 2026',  batteries:6,batteryNames:DEF_BAT_NAMES(6),points:[...DEF_PTS],startingOrder:[]},
+  {id:'04_07',label:'4 Lug', full:'4 Luglio 2026',   batteries:6,batteryNames:DEF_BAT_NAMES(6),points:[...DEF_PTS],startingOrder:[]},
+  {id:'20_09',label:'20 Set',full:'20 Settembre 2026',batteries:6,batteryNames:DEF_BAT_NAMES(6),points:[...DEF_PTS],startingOrder:[]},
 ];
 
 let db=null, gdata={}, dirty=false, saveTimer=null;
@@ -278,11 +295,6 @@ let pdfContext=null, pdfPrintType=null;
 let editRaceIdx=null, ptsModalRid=null;
 
 // ═══════════════════ AUTH ═══════════════════
-// admin=annello2026 | giudice=gara2026
-const USERS={
-  'admin':'3f281b761df108e836ad0f0f8572d09f55330835437b586e3a6cfaa556ae5e6b',
-  'giudice':'fc0796a69100f2a040eb62e259436b5352e81a9bf07ca297c274cc4263f24b0f'
-};
 async function sha256(m){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(m));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');}
 function openLogin(){document.getElementById('l_user').value='';document.getElementById('l_pass').value='';document.getElementById('l_err').textContent='';document.getElementById('login-overlay').classList.add('open');setTimeout(()=>document.getElementById('l_user').focus(),100);}
 function closeLogin(){document.getElementById('login-overlay').classList.remove('open');}
@@ -297,53 +309,54 @@ function logout(){currentUser=null;S.editMode=false;S.pEditMode=false;render();t
 function requireLogin(cb){if(currentUser)cb();else openLogin();}
 
 // ═══════════════════ FIREBASE ═══════════════════
-function getCfg(){try{return JSON.parse(localStorage.getItem('fbcfg')||'null');}catch{return null;}}
-function showCfg(){
-  const c=getCfg();
-  if(c){document.getElementById('c_apiKey').value=c.apiKey||'';document.getElementById('c_authDomain').value=c.authDomain||'';document.getElementById('c_dbUrl').value=c.databaseURL||'';document.getElementById('c_projectId').value=c.projectId||'';}
-  document.getElementById('cfg-overlay').classList.add('open');
-}
-function saveCfg(){
-  const cfg={apiKey:document.getElementById('c_apiKey').value.trim(),authDomain:document.getElementById('c_authDomain').value.trim(),databaseURL:document.getElementById('c_dbUrl').value.trim(),projectId:document.getElementById('c_projectId').value.trim()};
-  if(!cfg.apiKey||!cfg.databaseURL){toast('Compila tutti i campi');return;}
-  localStorage.setItem('fbcfg',JSON.stringify(cfg));
-  document.getElementById('cfg-overlay').classList.remove('open');
-  initFirebase(cfg);
-}
-function initFirebase(cfg){
-  document.getElementById('loading-txt').textContent='Connessione a Firebase...';
-  document.getElementById('loading').style.display='flex';
+function initFirebase(){
+  document.getElementById('loading-txt').textContent='Connessione al database...';
   try{
-    if(firebase.apps.length)firebase.app().delete();
-    firebase.initializeApp(cfg);
+    firebase.initializeApp(FB_CONFIG);
     db=firebase.database();
-    Promise.all([db.ref('gara2026').once('value'),db.ref('riders').once('value'),db.ref('races').once('value')]).then(([gs,rs,rds])=>{
+    Promise.all([
+      db.ref('gara2026').once('value'),
+      db.ref('riders').once('value'),
+      db.ref('races').once('value'),
+    ]).then(([gs,rs,rds])=>{
       gdata=gs.val()||{};
       if(!gs.val())db.ref('gara2026').set({});
       if(rs.val()&&Array.isArray(rs.val())&&rs.val().length)P=rs.val();
-      if(rds.val()&&Array.isArray(rds.val())&&rds.val().length){RD=rds.val().map(r=>({batteries:5,points:[...DEF_PTS],startingOrder:[],...r}));}
+      if(rds.val()&&Array.isArray(rds.val())&&rds.val().length){
+        RD=rds.val().map(r=>({batteries:6,batteryNames:DEF_BAT_NAMES(r.batteries||6),points:[...DEF_PTS],startingOrder:[],...r}));
+      }
       if(!S.race||!RD.find(r=>r.id===S.race))S.race=RD[0]?.id;
+      // real-time listeners
       db.ref('gara2026').on('value',s=>{if(s.val()){gdata=s.val();if(!dirty)render();}});
       db.ref('riders').on('value',s=>{if(s.val()&&!S.pEditMode){P=s.val();render();}});
-      db.ref('races').on('value',s=>{if(s.val()&&Array.isArray(s.val())&&!rdTemp){RD=s.val().map(r=>({batteries:5,points:[...DEF_PTS],startingOrder:[],...r}));render();}});
+      db.ref('races').on('value',s=>{if(s.val()&&Array.isArray(s.val())&&!rdTemp){RD=s.val().map(r=>({batteries:6,batteryNames:DEF_BAT_NAMES(r.batteries||6),points:[...DEF_PTS],startingOrder:[],...r}));render();}});
       document.getElementById('loading').style.display='none';
       render();
-    }).catch(e=>{document.getElementById('loading').style.display='none';toast('Errore: '+e.message);});
-  }catch(e){document.getElementById('loading').style.display='none';toast('Errore Firebase: '+e.message);}
+    }).catch(e=>{
+      document.getElementById('loading').style.display='none';
+      toast('⚠ DB non raggiungibile: '+e.message);
+      gdata={};render();
+    });
+  }catch(e){
+    document.getElementById('loading').style.display='none';
+    toast('⚠ Errore Firebase: '+e.message);
+    gdata={};render();
+  }
 }
 function fbSave(path,data,msg){if(db){db.ref(path).set(data).then(()=>{if(msg)toast(msg);}).catch(()=>toast('Errore salvataggio'));}}
 function autosave(){dirty=true;clearTimeout(saveTimer);saveTimer=setTimeout(()=>{fbSave('gara2026',gdata,'');dirty=false;},800);}
 
 // ═══════════════════ HELPERS ═══════════════════
-function emptyEntry(n){return{bp:'',b:Array.from({length:n||5},()=>({t:'',r:false}))};}
+function emptyEntry(n){return{bp:'',b:Array.from({length:n||6},()=>({t:'',r:false}))};}
 function getRace(rid){return RD.find(r=>r.id===rid)||RD[0];}
+function getBatNames(rd){const n=rd.batteries||6;const names=rd.batteryNames||[];return Array.from({length:n},(_,i)=>names[i]||`Batteria ${i+1}`);}
 function getRidersForRace(rid){
   const rd=getRace(rid);if(!rd)return P;
   const order=rd.startingOrder&&rd.startingOrder.length?rd.startingOrder:P.map(p=>p.id);
   return order.map(id=>P.find(p=>p.id==id)).filter(Boolean);
 }
 function getEntry(rid,pid){
-  const rd=getRace(rid);const n=rd?rd.batteries||5:5;
+  const rd=getRace(rid);const n=rd?rd.batteries||6:6;
   if(!gdata[rid])gdata[rid]={};
   if(!gdata[rid][pid])gdata[rid][pid]=emptyEntry(n);
   const e=gdata[rid][pid];
@@ -396,7 +409,6 @@ function renderNav(){
     ${races}
     <button class="tab ${S.view==='generale'?'act':''}" onclick="go('generale')">Generale</button>
     <button class="tab ${S.view==='tappe'?'act':''}" onclick="go('tappe')" style="color:var(--text3)">⚙ Tappe</button>
-    <button class="tab" onclick="showCfg()" style="color:var(--text3)" title="Impostazioni Firebase">⚙ DB</button>
   `;
 }
 function renderHeaderActions(){
@@ -407,6 +419,22 @@ function renderHeaderActions(){
     else html=`<div style="display:flex;align-items:center;gap:8px">${currentUser?`<div class="user-badge"><span>${currentUser}</span><button class="logout-btn" onclick="logout()">Esci</button></div>`:''}<button class="edit-btn" onclick="startEdit()">Modifica dati</button></div>`;
   }
   document.getElementById('header-actions').innerHTML=html;
+}
+
+// ═══════════════════ EXPORT BAR ═══════════════════
+function exportBar(ctx){
+  if(ctx==='race'){
+    return`<div class="export-bar no-print">
+      <button class="icon-btn" onclick="openPdfModal('race')">🖨 PDF</button>
+      <button class="icon-btn" onclick="exportCSV('race')">📄 CSV</button>
+      <button class="icon-btn" onclick="exportXLSX('race')">📊 XLSX</button>
+    </div>`;
+  }
+  return`<div class="export-bar no-print">
+    <button class="icon-btn" onclick="openPdfModal('generale')">🖨 PDF</button>
+    <button class="icon-btn" onclick="exportCSV('generale')">📄 CSV</button>
+    <button class="icon-btn" onclick="exportXLSX('generale')">📊 XLSX</button>
+  </div>`;
 }
 
 // ═══════════════════ VIEWS ═══════════════════
@@ -428,46 +456,48 @@ function buildPartecipanti(){
     :`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px"><div style="font-size:22px;font-family:'Bebas Neue',sans-serif;flex:1">Cavalieri Iscritti (${list.length})</div><button class="edit-btn" onclick="startPEdit()">Modifica lista</button></div>`;
   if(!S.pEditMode)return`<div>${hdr}<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Cavaliere</th><th>Cavallo</th></tr></thead><tbody>${list.map(p=>`<tr><td style="color:var(--text3);font-size:11px;font-family:'DM Mono',monospace">${p.id}</td><td style="font-weight:500">${p.name||'—'}</td><td style="color:var(--text3)">${p.horse||'—'}</td></tr>`).join('')}</tbody></table></div></div>`;
   return`<div>${hdr}<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Cavaliere</th><th>Cavallo</th><th></th></tr></thead><tbody id="p-tbody">${list.map((p,i)=>`<tr><td style="color:var(--text3);font-size:11px">${i+1}</td><td><input class="ti ti-wide" type="text" value="${p.name||''}" placeholder="Nome Cognome" oninput="setPName(${i},this.value)"></td><td><input class="ti ti-wide" type="text" value="${p.horse||''}" placeholder="Cavallo" oninput="setPHorse(${i},this.value)"></td><td><button onclick="removeRider(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 6px">×</button></td></tr>`).join('')}</tbody></table></div>
-  <button onclick="addRider()" style="margin-top:12px;display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius);border:1px dashed var(--border2);background:none;color:var(--text2);cursor:pointer;font-size:13px">+ Aggiungi cavaliere</button>
-  </div>`;
+  <button onclick="addRider()" style="margin-top:12px;display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius);border:1px dashed var(--border2);background:none;color:var(--text2);cursor:pointer;font-size:13px">+ Aggiungi cavaliere</button></div>`;
 }
 
 function buildRace(){
-  const rd=getRace(S.race);if(!rd)return`<div style="color:var(--text3);padding:40px;text-align:center">Nessuna tappa disponibile.<br><button class="edit-btn" style="margin-top:12px" onclick="go('tappe')">Gestisci Tappe</button></div>`;
+  const rd=getRace(S.race);
+  if(!rd)return`<div style="color:var(--text3);padding:40px;text-align:center">Nessuna tappa disponibile.<br><button class="edit-btn" style="margin-top:12px" onclick="go('tappe')">Gestisci Tappe</button></div>`;
   const tabs=`<div class="sub-tabs"><button class="stab ${S.raceTab==='classifica'?'act':''}" onclick="setRaceTab('classifica')">Classifica</button><button class="stab ${S.raceTab==='dati'?'act':''}" onclick="setRaceTab('dati')">Inserimento dati</button><button class="stab ${S.raceTab==='partenza'?'act':''}" onclick="setRaceTab('partenza')">Lista partenza</button></div>`;
   const ranked=rankRace(S.race);
+  const batNames=getBatNames(rd);
 
   if(S.raceTab==='partenza'){
     const riders=getRidersForRace(S.race);
-    return`<div><div style="font-size:22px;font-family:'Bebas Neue',sans-serif;margin-bottom:4px">${rd.full}</div><div style="font-size:12px;color:var(--text3);margin-bottom:14px">${riders.length} partecipanti</div>${tabs}
+    return`<div><div style="font-size:22px;font-family:'Bebas Neue',sans-serif;margin-bottom:4px">${rd.full}</div><div style="font-size:12px;color:var(--text3);margin-bottom:14px">${riders.length} partecipanti · Batterie: ${batNames.join(', ')}</div>${tabs}
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap" class="no-print">
       <button class="edit-btn" onclick="openStartModal('${rd.id}')">✏️ Modifica lista</button>
-      <button class="icon-btn" onclick="openPdfModal('race');pdfPrintType='partenza'">⬇ Esporta PDF</button>
     </div>
+    ${exportBar('race')}
     <div class="tbl-wrap"><table><thead><tr><th>N°</th><th>Cavaliere</th><th>Cavallo</th></tr></thead><tbody>${riders.map((p,i)=>`<tr><td style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--accent)">${i+1}</td><td style="font-weight:500">${p.name}</td><td style="color:var(--text3)">${p.horse||'—'}</td></tr>`).join('')}</tbody></table></div></div>`;
   }
   if(S.raceTab==='classifica'){
     const w=ranked.filter(r=>r.pos!==null),n=ranked.filter(r=>r.pos===null);
-    return`<div><div style="font-size:22px;font-family:'Bebas Neue',sans-serif;margin-bottom:4px">${rd.full}</div><div style="font-size:12px;color:var(--text3);margin-bottom:14px">Punti: ${(rd.points||DEF_PTS).slice(0,6).join(', ')}… · Batterie: ${rd.batteries}</div>${tabs}
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap" class="no-print">
-      ${currentUser?`<button class="edit-btn" onclick="openPtsModal('${rd.id}')">🏆 Modifica punti</button>`:''}
-      <button class="icon-btn" onclick="openPdfModal('race');pdfPrintType='classifica'">⬇ Esporta PDF</button>
-    </div>
+    return`<div><div style="font-size:22px;font-family:'Bebas Neue',sans-serif;margin-bottom:4px">${rd.full}</div><div style="font-size:12px;color:var(--text3);margin-bottom:14px">Punti: ${(rd.points||DEF_PTS).slice(0,6).join(', ')}… · Batterie: ${batNames.join(', ')}</div>${tabs}
+    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap" class="no-print">${currentUser?`<button class="edit-btn" onclick="openPtsModal('${rd.id}')">🏆 Modifica punti</button>`:''}</div>
+    ${exportBar('race')}
     <div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Cavaliere</th><th>Cavallo</th><th>Anelli</th><th>Media</th><th>Min</th><th>Punti</th></tr></thead>
     <tbody>${w.map(r=>`<tr><td>${posBadge(r.pos)}</td><td style="font-weight:${r.pos<=3?600:400}">${r.name}</td><td style="color:var(--text3);font-size:12px">${r.horse||'—'}</td><td><span style="font-size:16px;font-weight:600;color:${r.rings>0?'var(--green)':'var(--text3)'}">${r.rings}</span></td><td class="time-val">${fmt(r.media,4)}</td><td class="time-val">${fmt(r.minore,3)}</td><td class="pts-val">${r.pts||'—'}</td></tr>`).join('')}
     ${n.length?`<tr><td colspan="7" style="color:var(--text3);font-size:11px;text-align:center;padding:12px">+ ${n.length} cavalieri senza dati</td></tr>`:''}
     </tbody></table></div></div>`;
   }
   // DATI
-  const edit=S.editMode,bat=rd.batteries||5;
+  const edit=S.editMode,bat=rd.batteries||6;
   return`<div><div style="font-size:22px;font-family:'Bebas Neue',sans-serif;margin-bottom:4px">${rd.full}</div><div style="font-size:12px;color:var(--text3);margin-bottom:14px">${bat} batterie · ${getRidersForRace(S.race).length} partecipanti</div>${tabs}
-  <div style="display:flex;gap:8px;margin-bottom:12px" class="no-print"><button class="icon-btn" onclick="openPdfModal('race');pdfPrintType='dati'">⬇ Esporta PDF</button></div>
+  ${exportBar('race')}
   <div class="tbl-wrap"><table>
-    <thead><tr><th>#</th><th>Cavaliere</th><th>Cavallo</th><th>B.Prova</th>${Array.from({length:bat},(_,i)=>`<th>Bat.${i+1}</th>`).join('')}<th>Anelli</th><th>Media</th><th>Min</th><th>Pos</th></tr></thead>
+    <thead><tr><th>#</th><th>Cavaliere</th><th>Cavallo</th><th>B.Prova</th>${batNames.map(n=>`<th>${n}</th>`).join('')}<th>Anelli</th><th>Media</th><th>Min</th><th>Pos</th></tr></thead>
     <tbody>${ranked.map(r=>{
       const st=stats(r.entry);
       const bpC=edit?`<td><input class="ti" type="number" step="0.001" min="1" max="20" value="${r.entry.bp||''}" onchange="setBP('${S.race}',${r.id},this.value)" placeholder="—"></td>`:`<td class="time-val tag-abs">${r.entry.bp||'/'}</td>`;
-      const bC=r.entry.b.map((b,bi)=>edit?`<td style="white-space:nowrap"><input class="ti" type="number" step="0.001" min="1" max="20" value="${b.t}" onchange="setTime('${S.race}',${r.id},${bi},this.value)" placeholder="—"><button class="rb ${b.r?'si':'no'}" onclick="toggleRing('${S.race}',${r.id},${bi})">${b.r?'SI':'NO'}</button></td>`:(b.t===''?`<td class="tag-abs">/</td>`:`<td class="time-val ${b.r?'tag-si':'tag-no'}">${b.t}${b.r?' ●':''}</td>`)).join('');
+      const bC=r.entry.b.map((b,bi)=>edit
+        ?`<td style="white-space:nowrap"><input class="ti" type="number" step="0.001" min="1" max="20" value="${b.t}" onchange="setTime('${S.race}',${r.id},${bi},this.value)" placeholder="—"><button class="rb ${b.r?'si':'no'}" onclick="toggleRing('${S.race}',${r.id},${bi})">${b.r?'SI':'NO'}</button></td>`
+        :(b.t===''?`<td class="tag-abs">/</td>`:`<td class="time-val ${b.r?'tag-si':'tag-no'}">${b.t}${b.r?' ●':''}</td>`)
+      ).join('');
       return`<tr><td style="color:var(--text3);font-size:11px">${r.id}</td><td style="font-weight:${r.pos&&r.pos<=3?600:400}">${r.name}</td><td style="color:var(--text3);font-size:12px">${r.horse||'—'}</td>${bpC}${bC}<td style="font-size:15px;font-weight:600;color:${st.rings>0?'var(--green)':'var(--text3)'}">${st.media!==null?st.rings:'—'}</td><td class="time-val">${fmt(st.media,4)}</td><td class="time-val">${fmt(st.minore,3)}</td><td>${posBadge(r.pos)}</td></tr>`;
     }).join('')}</tbody>
   </table></div>
@@ -479,9 +509,9 @@ function buildGenerale(){
   return`<div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;flex-wrap:wrap">
       <div style="font-size:22px;font-family:'Bebas Neue',sans-serif;flex:1">Classifica Generale</div>
-      <button class="icon-btn no-print" onclick="openPdfModal('generale')">⬇ Esporta PDF</button>
     </div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Stagione 2026 · ${done.length}/${RD.length} gare disputate</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Stagione 2026 · ${done.length}/${RD.length} gare disputate</div>
+    ${exportBar('generale')}
     <div class="tbl-wrap"><table>
       <thead><tr><th>Pos</th><th>Cavaliere</th><th>Cavallo</th>${RD.map(rd=>`<th>${rd.label}</th>`).join('')}<th>Totale</th></tr></thead>
       <tbody>${g.map(p=>`<tr><td>${posBadge(p.pos)}</td><td style="font-weight:${p.pos&&p.pos<=3?600:400}">${p.name}</td><td style="color:var(--text3);font-size:12px">${p.horse||'—'}</td>${RD.map(rd=>{const pt=p.perRace[rd.id]||0;return`<td class="${pt>0?'pts-val':'tag-abs'}">${pt||'—'}</td>`;}).join('')}<td style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:${p.total>0?'var(--accent)':'var(--text3)'}">${p.total||'—'}</td></tr>`).join('')}</tbody>
@@ -497,12 +527,13 @@ function buildTappe(){
       <button class="edit-btn" onclick="openAddRaceModal()">+ Nuova tappa</button>
     </div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>Data</th><th>Label</th><th>Batterie</th><th>Punti (prime posizioni)</th><th class="no-print">Azioni</th></tr></thead>
+      <thead><tr><th>Data</th><th>Label</th><th>Batterie</th><th>Nomi batterie</th><th>Punti (1°→)</th><th class="no-print">Azioni</th></tr></thead>
       <tbody>${RD.map((rd,i)=>`<tr>
         <td style="font-weight:500">${rd.full}</td>
         <td style="color:var(--text3)">${rd.label}</td>
-        <td style="font-family:'DM Mono',monospace;font-weight:600">${rd.batteries}</td>
-        <td style="font-family:'DM Mono',monospace;font-size:11px">${(rd.points||DEF_PTS).slice(0,8).join(', ')}…</td>
+        <td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--accent)">${rd.batteries}</td>
+        <td style="font-size:11px;color:var(--text2)">${getBatNames(rd).join(' · ')}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px">${(rd.points||DEF_PTS).slice(0,6).join(', ')}…</td>
         <td class="no-print"><div style="display:flex;gap:4px">
           <button class="icon-btn" onclick="openEditRaceModal(${i})" title="Modifica tappa">✏️</button>
           <button class="icon-btn" onclick="openPtsModal('${rd.id}')" title="Modifica punti">🏆</button>
@@ -535,18 +566,56 @@ function setPHorse(i,v){pTemp[i].horse=v.toUpperCase();}
 function addRider(){const nid=pTemp.length?Math.max(...pTemp.map(p=>p.id))+1:1;pTemp.push({id:nid,name:'',horse:''});render();setTimeout(()=>{const rows=document.querySelectorAll('#p-tbody tr');if(rows.length){const inp=rows[rows.length-1].querySelector('input');if(inp)inp.focus();}},50);}
 function removeRider(i){if(pTemp.length<=1){toast('Almeno un cavaliere richiesto');return;}if(!confirm(`Rimuovere "${pTemp[i].name||'questo cavaliere'}"?`))return;pTemp.splice(i,1);render();}
 
-// Race modal
-function openAddRaceModal(){requireLogin(()=>{editRaceIdx=null;document.getElementById('race-modal-title').textContent='Nuova Tappa';document.getElementById('rm_full').value='';document.getElementById('rm_label').value='';document.getElementById('rm_bat').value='5';document.getElementById('rm_pts').value=DEF_PTS.join(',');document.getElementById('race-modal').classList.add('open');});}
-function openEditRaceModal(i){requireLogin(()=>{editRaceIdx=i;const rd=RD[i];document.getElementById('race-modal-title').textContent='Modifica Tappa';document.getElementById('rm_full').value=rd.full;document.getElementById('rm_label').value=rd.label;document.getElementById('rm_bat').value=rd.batteries||5;document.getElementById('rm_pts').value=(rd.points||DEF_PTS).join(',');document.getElementById('race-modal').classList.add('open');});}
+// Race modal — battery name fields
+function updateBatNameFields(){
+  const n=parseInt(document.getElementById('rm_bat').value)||6;
+  const cont=document.getElementById('bat-name-fields');
+  const existing=cont.querySelectorAll('input');
+  const old=Array.from(existing).map(i=>i.value);
+  cont.innerHTML=Array.from({length:n},(_,i)=>`<input type="text" placeholder="Batteria ${i+1}" value="${old[i]||DEF_BAT_NAMES(n)[i]||'Batteria '+(i+1)}">`).join('');
+}
+function getBatNamesFromModal(){
+  return Array.from(document.getElementById('bat-name-fields').querySelectorAll('input')).map(i=>i.value.trim()||`Batteria ${i+1}`);
+}
+
+function openAddRaceModal(){
+  requireLogin(()=>{
+    editRaceIdx=null;
+    document.getElementById('race-modal-title').textContent='Nuova Tappa';
+    document.getElementById('rm_full').value='';
+    document.getElementById('rm_label').value='';
+    document.getElementById('rm_bat').value='6';
+    document.getElementById('rm_pts').value=DEF_PTS.join(',');
+    updateBatNameFields();
+    document.getElementById('race-modal').classList.add('open');
+  });
+}
+function openEditRaceModal(i){
+  requireLogin(()=>{
+    editRaceIdx=i;const rd=RD[i];
+    document.getElementById('race-modal-title').textContent='Modifica Tappa';
+    document.getElementById('rm_full').value=rd.full;
+    document.getElementById('rm_label').value=rd.label;
+    document.getElementById('rm_bat').value=rd.batteries||6;
+    document.getElementById('rm_pts').value=(rd.points||DEF_PTS).join(',');
+    // pre-fill battery names
+    const n=rd.batteries||6;
+    const names=getBatNames(rd);
+    const cont=document.getElementById('bat-name-fields');
+    cont.innerHTML=Array.from({length:n},(_,i)=>`<input type="text" placeholder="Batteria ${i+1}" value="${names[i]||''}">`).join('');
+    document.getElementById('race-modal').classList.add('open');
+  });
+}
 function closeRaceModal(){document.getElementById('race-modal').classList.remove('open');}
 function saveRaceModal(){
   const full=document.getElementById('rm_full').value.trim(),label=document.getElementById('rm_label').value.trim();
-  const bat=Math.max(1,Math.min(10,parseInt(document.getElementById('rm_bat').value)||5));
+  const bat=Math.max(1,Math.min(12,parseInt(document.getElementById('rm_bat').value)||6));
   const pts=document.getElementById('rm_pts').value.split(',').map(x=>parseInt(x.trim())).filter(x=>!isNaN(x));
+  const batNames=getBatNamesFromModal();
   if(!full||!label){toast('Compila data e etichetta');return;}
   rdTemp=true;
-  if(editRaceIdx===null){RD.push({id:'r_'+Date.now(),label,full,batteries:bat,points:pts.length?pts:DEF_PTS,startingOrder:[]});}
-  else{RD[editRaceIdx]={...RD[editRaceIdx],label,full,batteries:bat,points:pts.length?pts:DEF_PTS};}
+  if(editRaceIdx===null){RD.push({id:'r_'+Date.now(),label,full,batteries:bat,batteryNames:batNames,points:pts.length?pts:DEF_PTS,startingOrder:[]});}
+  else{RD[editRaceIdx]={...RD[editRaceIdx],label,full,batteries:bat,batteryNames:batNames,points:pts.length?pts:DEF_PTS};}
   fbSave('races',RD,'Tappa salvata ✓');closeRaceModal();rdTemp=null;render();
 }
 function deleteRace(rid){requireLogin(()=>{if(!confirm('Eliminare questa tappa e tutti i suoi dati?'))return;rdTemp=true;RD=RD.filter(r=>r.id!==rid);delete gdata[rid];fbSave('races',RD,'');fbSave('gara2026',gdata,'Tappa eliminata');if(S.race===rid)S.race=RD[0]?.id;rdTemp=null;render();});}
@@ -591,18 +660,17 @@ function addToStart(){
 function confirmAddToStart(){const id=parseInt(document.getElementById('add-start-select').value);const r=P.find(p=>p.id===id);if(r)startTemp.push({...r});document.getElementById('add-start-modal').classList.remove('open');renderStartList();}
 function saveStartOrder(){rdTemp=true;const idx=RD.findIndex(r=>r.id===currentStartRid);if(idx>=0)RD[idx].startingOrder=startTemp.map(p=>p.id);fbSave('races',RD,'Lista partenza salvata ✓');rdTemp=null;document.getElementById('start-modal').classList.remove('open');render();}
 
-// PDF / Print
+// ═══════════════════ PDF / PRINT ═══════════════════
 function openPdfModal(ctx){
   pdfContext=ctx;
   const sub=document.getElementById('pdf-modal-sub');
   const opts=document.getElementById('pdf-options');
-  if(ctx==='generale'){
-    sub.textContent='Classifica Generale';opts.innerHTML='';pdfPrintType='generale';
-  }else{
+  if(ctx==='generale'){sub.textContent='Classifica Generale';opts.innerHTML='';pdfPrintType='generale';}
+  else{
     const rd=getRace(S.race);sub.textContent=rd?rd.full:'';
-    opts.innerHTML=`<div style="display:flex;flex-direction:column;gap:10px">
+    opts.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">
       ${[['classifica','📊 Classifica'],['dati','📋 Inserimento dati'],['partenza','🏇 Lista partenza'],['entrambi','📊+📋 Classifica + Dati']].map(([v,l])=>`<label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px;border-radius:var(--radius);border:1px solid ${pdfPrintType===v?'var(--accent)':'var(--border)'};background:${pdfPrintType===v?'rgba(212,168,67,.08)':'transparent'}">
-        <input type="radio" name="pdftype" value="${v}" ${pdfPrintType===v?'checked':''} onchange="pdfPrintType=this.value;this.closest('.overlay').querySelectorAll('label').forEach(l=>{l.style.borderColor=l.querySelector('input').value===this.value?'var(--accent)':'var(--border)';l.style.background=l.querySelector('input').value===this.value?'rgba(212,168,67,.08)':'transparent';})">
+        <input type="radio" name="pdftype" value="${v}" ${pdfPrintType===v?'checked':''} onchange="pdfPrintType=this.value;this.closest('.overlay').querySelectorAll('label').forEach(l=>{const sel=l.querySelector('input').value===this.value;l.style.borderColor=sel?'var(--accent)':'var(--border)';l.style.background=sel?'rgba(212,168,67,.08)':'transparent';})">
         <span style="font-size:13px">${l}</span>
       </label>`).join('')}
     </div>`;
@@ -613,15 +681,13 @@ function openPdfModal(ctx){
 function doPrint(){
   document.getElementById('pdf-modal').classList.remove('open');
   const pa=document.getElementById('print-area');
-  if(pdfContext==='generale'){
-    pa.innerHTML=`<div class="print-title">Gara All'Annello 2026 — Classifica Generale</div>`+printGenerale();
-  }else{
-    const rd=getRace(S.race);
-    let html=`<div class="print-title">Gara All'Annello 2026 — ${rd?rd.full:''}</div>`;
+  if(pdfContext==='generale'){pa.innerHTML=`<div class="print-title">Gara All'Annello 2026 — Classifica Generale</div>`+printGenerale();}
+  else{
+    const rd=getRace(S.race);let html=`<div class="print-title">Gara All'Annello 2026 — ${rd?rd.full:''}</div>`;
     if(pdfPrintType==='classifica')html+=printClassifica(S.race);
     else if(pdfPrintType==='dati')html+=printDati(S.race);
     else if(pdfPrintType==='partenza')html+=printPartenza(S.race);
-    else if(pdfPrintType==='entrambi')html+=printClassifica(S.race)+`<div class="print-section">` +printDati(S.race)+`</div>`;
+    else if(pdfPrintType==='entrambi')html+=printClassifica(S.race)+`<div class="print-section">`+printDati(S.race)+`</div>`;
     pa.innerHTML=html;
   }
   setTimeout(()=>{window.print();setTimeout(()=>{pa.innerHTML='';},1500);},150);
@@ -633,9 +699,9 @@ function printClassifica(rid){
   <tbody>${w.map(r=>`<tr><td>${posBadge(r.pos)}</td><td style="font-weight:${r.pos<=3?600:400}">${r.name}</td><td>${r.horse||'—'}</td><td style="font-weight:700">${r.rings}</td><td>${fmt(r.media,4)}</td><td>${fmt(r.minore,3)}</td><td style="font-weight:700">${r.pts||'—'}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function printDati(rid){
-  const rd=getRace(rid),ranked=rankRace(rid),bat=rd?rd.batteries||5:5;
-  return`<div class="print-sub">Dati batterie · ${bat} batterie per cavaliere</div>
-  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Cavaliere</th><th>B.P.</th>${Array.from({length:bat},(_,i)=>`<th>B${i+1}</th>`).join('')}<th>Anelli</th><th>Media</th><th>Pos</th></tr></thead>
+  const rd=getRace(rid),ranked=rankRace(rid),batNames=getBatNames(rd);
+  return`<div class="print-sub">Dati batterie</div>
+  <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Cavaliere</th><th>B.P.</th>${batNames.map(n=>`<th>${n}</th>`).join('')}<th>Anelli</th><th>Media</th><th>Pos</th></tr></thead>
   <tbody>${ranked.map(r=>{const st=stats(r.entry);return`<tr><td>${r.id}</td><td>${r.name}</td><td>${r.entry.bp||'/'}</td>${r.entry.b.map(b=>b.t===''?`<td>—</td>`:`<td>${b.t}${b.r?' ●':''}</td>`).join('')}<td style="font-weight:700">${st.media!==null?st.rings:'—'}</td><td>${fmt(st.media,4)}</td><td>${posBadge(r.pos)}</td></tr>`;}).join('')}</tbody></table></div>`;
 }
 function printPartenza(rid){
@@ -651,15 +717,99 @@ function printGenerale(){
   <tbody>${g.map(p=>`<tr><td>${posBadge(p.pos)}</td><td style="font-weight:${p.pos&&p.pos<=3?600:400}">${p.name}</td><td>${p.horse||'—'}</td>${RD.map(rd=>{const pt=p.perRace[rd.id]||0;return`<td style="font-weight:${pt>0?500:400}">${pt||'—'}</td>`;}).join('')}<td style="font-weight:700;font-size:14px">${p.total||'—'}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
-// Toast
+// ═══════════════════ CSV / XLSX EXPORT ═══════════════════
+function getExportContext(){
+  // returns {type, rid, label}
+  if(pdfContext==='generale'||S.view==='generale')return{type:'generale'};
+  const rd=getRace(S.race);
+  // decide what to export based on current tab
+  return{type:S.raceTab||'classifica',rid:S.race,rd};
+}
+
+function buildClassificaRows(rid){
+  const rd=getRace(rid),ranked=rankRace(rid),w=ranked.filter(r=>r.pos!==null);
+  const header=['Pos','Cavaliere','Cavallo','Anelli','Media (s)','Min (s)','Punti'];
+  const rows=w.map(r=>[r.pos,r.name,r.horse||'',r.rings,r.media!==null?parseFloat(r.media.toFixed(4)):'',(r.minore!==null?parseFloat(r.minore.toFixed(3)):''),r.pts||0]);
+  return{header,rows,title:rd.full+' — Classifica'};
+}
+function buildDatiRows(rid){
+  const rd=getRace(rid),ranked=rankRace(rid),batNames=getBatNames(rd);
+  const header=['#','Cavaliere','Cavallo','B.Prova',...batNames.map((n,i)=>`${n} (s)`),...batNames.map((n,i)=>`${n} (anello)`),'Anelli','Media (s)','Min (s)','Pos'];
+  const rows=ranked.map(r=>{
+    const st=stats(r.entry);
+    const times=r.entry.b.map(b=>b.t===''?'':parseFloat(b.t));
+    const rings=r.entry.b.map(b=>b.r?'SI':'NO');
+    return[r.id,r.name,r.horse||'',r.entry.bp||'',...times,...rings,st.media!==null?st.rings:'',(st.media!==null?parseFloat(st.media.toFixed(4)):''),(st.minore!==null?parseFloat(st.minore.toFixed(3)):''),r.pos||''];
+  });
+  return{header,rows,title:rd.full+' — Dati Batterie'};
+}
+function buildPartenzaRows(rid){
+  const rd=getRace(rid),riders=getRidersForRace(rid);
+  const header=['N°','Cavaliere','Cavallo'];
+  const rows=riders.map((p,i)=>[i+1,p.name,p.horse||'']);
+  return{header,rows,title:rd.full+' — Lista Partenza'};
+}
+function buildGeneraleRows(){
+  const g=generale();
+  const header=['Pos','Cavaliere','Cavallo',...RD.map(rd=>rd.label),'Totale'];
+  const rows=g.map(p=>[p.pos||'',p.name,p.horse||'',...RD.map(rd=>p.perRace[rd.id]||0),p.total]);
+  return{header,rows,title:'Classifica Generale 2026'};
+}
+
+function getDataForExport(ctx){
+  if(ctx==='generale')return buildGeneraleRows();
+  if(ctx==='classifica')return buildClassificaRows(S.race);
+  if(ctx==='dati')return buildDatiRows(S.race);
+  if(ctx==='partenza')return buildPartenzaRows(S.race);
+  return buildClassificaRows(S.race);
+}
+
+function exportCSV(ctx){
+  const {header,rows,title}=getDataForExport(ctx);
+  const escape=v=>{const s=String(v===null||v===undefined?'':v);return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s.replace(/"/g,'""')}"`:s;};
+  const lines=[header.map(escape).join(','),...rows.map(r=>r.map(escape).join(','))];
+  const blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=title.replace(/[^a-z0-9]/gi,'_')+'.csv';a.click();URL.revokeObjectURL(a.href);
+  toast('CSV esportato ✓');
+}
+
+function exportXLSX(ctx){
+  if(typeof XLSX==='undefined'){toast('Libreria XLSX non caricata');return;}
+  const wb=XLSX.utils.book_new();
+
+  if(ctx==='generale'){
+    const d=buildGeneraleRows();
+    const ws=XLSX.utils.aoa_to_sheet([d.header,...d.rows]);
+    styleSheet(ws,d.header.length,d.rows.length);
+    XLSX.utils.book_append_sheet(wb,ws,'Classifica Generale');
+  } else if(ctx==='race'){
+    // export all 3 sheets for this race
+    const tabs=[
+      {fn:()=>buildClassificaRows(S.race),name:'Classifica'},
+      {fn:()=>buildDatiRows(S.race),name:'Dati Batterie'},
+      {fn:()=>buildPartenzaRows(S.race),name:'Lista Partenza'},
+    ];
+    tabs.forEach(t=>{const d=t.fn();const ws=XLSX.utils.aoa_to_sheet([d.header,...d.rows]);styleSheet(ws,d.header.length,d.rows.length);XLSX.utils.book_append_sheet(wb,ws,t.name);});
+  }
+
+  const rd=ctx==='race'?getRace(S.race):null;
+  const fname=(rd?rd.full:'Classifica_Generale_2026').replace(/[^a-z0-9]/gi,'_')+'.xlsx';
+  XLSX.writeFile(wb,fname);
+  toast('XLSX esportato ✓');
+}
+
+function styleSheet(ws,cols,rows){
+  // column widths
+  ws['!cols']=Array.from({length:cols},(_,i)=>({wch:i<=1?28:i===2?20:14}));
+  // freeze header row
+  ws['!freeze']={xSplit:0,ySplit:1};
+}
+
+// ═══════════════════ TOAST ═══════════════════
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 
-// Init
-window.addEventListener('load',()=>{
-  const cfg=getCfg();
-  if(cfg&&cfg.apiKey&&cfg.databaseURL){initFirebase(cfg);}
-  else{document.getElementById('loading').style.display='none';gdata={};render();toast('Firebase non configurato — dati locali');}
-});
+// ═══════════════════ INIT ═══════════════════
+window.addEventListener('load',()=>{initFirebase();});
 </script>
 </body>
 </html>
