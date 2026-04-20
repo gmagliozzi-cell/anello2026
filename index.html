@@ -993,76 +993,127 @@ function impGoPreview(){
 }
 
 // ── FUZZY NAME MATCH ──────────────────────────────────────────
-function normName(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'').trim();}
-function findRider(nameVal){
+function normName(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9\s]/g,' ').replace(/\s+/g,' ').trim();}
+function findRider(nameVal, idVal){
+  // 1. try by numeric ID (first column)
+  const num=parseInt(idVal);
+  if(!isNaN(num)&&num>0){const byId=P.find(p=>p.id===num);if(byId)return byId;}
   const n=normName(nameVal);
   if(!n)return null;
-  // exact
-  let r=P.find(p=>normName(p.name)===n);
+  // 2. exact normalized match
+  let r=P.find(p=>normName(p.name)===n);if(r)return r;
+  // 3. all words of file name present in DB name (handles extra/missing spaces)
+  const words=n.split(' ').filter(w=>w.length>2);
+  if(words.length>=2){
+    r=P.find(p=>{const pn=normName(p.name);return words.every(w=>pn.includes(w));});
+    if(r)return r;
+  }
+  // 4. DB name words present in file name
+  r=P.find(p=>{const pn=normName(p.name);const pw=pn.split(' ').filter(w=>w.length>2);return pw.length>=2&&pw.every(w=>n.includes(w));});
   if(r)return r;
-  // contains
+  // 5. one-way substring (last resort)
   r=P.find(p=>normName(p.name).includes(n)||n.includes(normName(p.name)));
-  if(r)return r;
-  // by id
-  const num=parseInt(nameVal);
-  if(!isNaN(num))return P.find(p=>p.id===num)||null;
-  return null;
+  return r||null;
 }
 function colIdx(keywords){
-  // find best matching column index from headers
   const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
   for(const kw of keywords){
     const k=norm(kw);
-    const i=impHeaders.findIndex(h=>norm(h).includes(k)||k.includes(norm(h)));
+    const i=impHeaders.findIndex(h=>norm(h)===k||norm(h).includes(k)||k.includes(norm(h)));
     if(i>=0)return i;
   }
   return -1;
+}
+function isTruthy(v){return['si','sì','1','true','yes','x'].includes(String(v||'').toLowerCase().trim());}
+function isSlash(v){return String(v||'').trim()==='/';}
+function cleanTime(v){
+  if(v===''||v===null||v===undefined||isSlash(v))return '';
+  const s=String(v).replace(',','.').trim();
+  return isNaN(parseFloat(s))?'':s;
 }
 
 // ── PARSE DATI GARA ──────────────────────────────────────────
 function impParseDati(){
   const rid=document.getElementById('imp-tappa').value;
   const rd=getRace(rid);
-  const bat=rd.batteries||6;
+  const batCountApp=rd.batteries||6;
+
+  // find name column (support also first numeric col as ID)
+  const iId   = impHeaders.findIndex(h=>h===''||/^n[°\.]?$/i.test(h.trim())); // first blank or "N°"
+  const iName = colIdx(['cavalieri','cavaliere','rider','nome','name','atleta']);
+  const iHorse= colIdx(['cavallo','horse']);
+
+  if(iName<0){toast('Colonna "Cavaliere" / "Cavalieri" non trovata.');return null;}
+
+  // ── POSITIONAL COLUMN PAIR DETECTION ──────────────────────
+  // Strategy: find "Batteria Prova" (or similar) time col, then scan pairs
+  // Each pair = (time, ring). Ring columns are often named "Anello" repeatedly.
+  // We detect pairs by: first find the BP time col, then find each "Batteria N" time col
+  // and assume the immediately following col is the ring col.
+
+  const iBPtime = colIdx(['batteria prova','b.prova','bprova','prova','bp','b prova']);
+  const iBPring = iBPtime>=0 ? iBPtime+1 : -1; // ring is always next column
+
+  // find time columns for batteries by scanning header for "Batteria N", "Bat N", etc.
+  // Also support the exported format which uses battery names from the app.
   const batNames=getBatNames(rd);
+  const batPairs=[]; // [{ti, ri, name}]
 
-  // auto-detect columns
-  const iName  = colIdx(['cavaliere','rider','nome','name','atleta']);
-  const iBP    = colIdx(['bprova','prova','batt.prova','battprova','bp','b.prova']);
-
-  if(iName<0){toast('Colonna "Cavaliere" non trovata. Assicurati che l\'intestazione contenga "Cavaliere" o "Nome".');return null;}
-
-  // detect time columns for each battery
-  const timeCols=[], ringCols=[];
-  for(let bi=0;bi<bat;bi++){
-    const bn=batNames[bi];
-    // time col: match battery name or "batteria N" or "bat N" or "B1", "B2"…
-    const tIdx=colIdx([bn+' (s)',bn,'batteria '+(bi+1)+' (s)','batteria '+(bi+1),'bat'+(bi+1),'b'+(bi+1),'t'+(bi+1)]);
-    // ring col: match with "(anello)" or "SI/NO" suffix
-    const rIdx=colIdx([bn+' (anello)',bn+' anello','batteria '+(bi+1)+' (anello)','anello'+(bi+1),'ring'+(bi+1),'r'+(bi+1)]);
-    timeCols.push(tIdx);
-    ringCols.push(rIdx);
+  // method A: find named columns like "Batteria 1", "Batteria 2"…
+  for(let bi=0;bi<12;bi++){
+    const candidates=[
+      `batteria ${bi+1}`,`bat${bi+1}`,`b${bi+1}`,`bat. ${bi+1}`,
+      ...(bi<batNames.length?[batNames[bi],batNames[bi]+' (s)']:[])
+    ];
+    const ti=colIdx(candidates);
+    if(ti<0)break; // no more batteries found
+    const ri=ti+1; // ring is the next column
+    batPairs.push({ti,ri,name:bi<batNames.length?batNames[bi]:`Batteria ${bi+1}`});
   }
+
+  // method B fallback: scan all columns for time-looking headers followed by "Anello"
+  if(!batPairs.length){
+    for(let ci=0;ci<impHeaders.length-1;ci++){
+      const h=impHeaders[ci].toLowerCase();
+      const hn=impHeaders[ci+1].toLowerCase();
+      if((h.includes('batteria')||h.includes('bat'))&&(hn.includes('anello')||hn.includes('ring'))){
+        const bi=batPairs.length;
+        batPairs.push({ti:ci,ri:ci+1,name:bi<batNames.length?batNames[bi]:`Batteria ${bi+1}`});
+      }
+    }
+  }
+
+  if(!batPairs.length){toast('Nessuna colonna batteria trovata. Assicurati che le colonne siano intestate "Batteria 1", "Batteria 2" ecc.');return null;}
 
   const matched=[], unmatched=[];
   for(const row of impRows){
     const nameVal=row[iName];
-    if(!nameVal)continue;
-    const rider=findRider(nameVal);
-    if(!rider){unmatched.push(String(nameVal));continue;}
+    // skip totals / empty rows
+    if(!nameVal||isSlash(nameVal))continue;
+    const ns=String(nameVal).trim();
+    if(!ns||ns.toLowerCase().includes('medi'))continue;
+    const idVal=iId>=0?row[iId]:'';
+    const rider=findRider(ns, idVal);
+    if(!rider){unmatched.push(ns);continue;}
+
+    // build batteries array matching app's battery count
+    const b=Array.from({length:batCountApp},(_,bi)=>{
+      if(bi>=batPairs.length)return{t:'',r:false};
+      const {ti,ri}=batPairs[bi];
+      const t=cleanTime(row[ti]);
+      const r=isTruthy(row[ri]);
+      return{t,r};
+    });
+
     const entry={
-      bp: iBP>=0&&row[iBP]!==''?String(row[iBP]):'',
-      b: timeCols.map((ti,bi)=>{
-        const tRaw=ti>=0?row[ti]:'';
-        const rRaw=ringCols[bi]>=0?row[ringCols[bi]]:'';
-        const t=tRaw!==''&&tRaw!==null&&tRaw!==undefined?String(tRaw).replace(',','.'):'';
-        const r=['si','sì','1','true','yes'].includes(String(rRaw).toLowerCase().trim());
-        return{t,r};
-      })
+      bp: iBPtime>=0?cleanTime(row[iBPtime]):'',
+      b
     };
-    matched.push({rider,entry,nameVal});
+    matched.push({rider,entry,nameVal:ns});
   }
-  return{type:'dati',rid,rd,matched,unmatched,timeCols,ringCols,batNames};
+
+  const fileBatCount=batPairs.length;
+  return{type:'dati',rid,rd,matched,unmatched,batPairs,batNames:batPairs.map(p=>p.name),fileBatCount,batCountApp};
 }
 
 // ── PARSE CAVALIERI ──────────────────────────────────────────
@@ -1110,13 +1161,13 @@ function renderImpPreview(){
   let summary='', warnings='', tableHTML='';
 
   if(p.type==='dati'){
-    const total=p.matched.length+p.unmatched.length;
     summary=`<span class="match-ok">✓ ${p.matched.length} cavalieri riconosciuti</span>`;
     if(p.unmatched.length)summary+=` &nbsp;<span class="match-warn">⚠ ${p.unmatched.length} non trovati</span>`;
-    summary+=`<br><small style="color:var(--text3)">Tappa: <strong style="color:var(--text)">${p.rd.full}</strong> · ${p.rd.batteries} batterie rilevate</small>`;
+    summary+=`<br><small style="color:var(--text3)">Tappa: <strong style="color:var(--text)">${p.rd.full}</strong> · ${p.fileBatCount} batterie nel file`;
+    if(p.fileBatCount!==p.batCountApp)summary+=` <span style="color:var(--accent)">(tappa ha ${p.batCountApp} — le rimanenti resteranno vuote)</span>`;
+    summary+=`</small>`;
     if(p.unmatched.length)warnings=`<strong>Non trovati:</strong> ${p.unmatched.slice(0,8).join(', ')}${p.unmatched.length>8?' …':''}`;
 
-    // preview table — show first 8 rows
     const previewRows=p.matched.slice(0,8);
     tableHTML=`<table><thead><tr><th>Cavaliere</th><th>B.Prova</th>${p.batNames.map(n=>`<th>${n}</th>`).join('')}</tr></thead>
     <tbody>${previewRows.map(({rider,entry})=>`<tr>
