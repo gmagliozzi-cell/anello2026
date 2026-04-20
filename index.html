@@ -65,6 +65,29 @@ tbody tr:hover td{background:var(--surface2)}
 .rc-ok{color:var(--green)}
 .rc-empty{color:var(--text3)}
 .export-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.drop-zone{border:2px dashed var(--border2);border-radius:var(--radius-lg);padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:rgba(212,168,67,.06)}
+.drop-zone input[type=file]{display:none}
+.drop-zone-icon{font-size:32px;margin-bottom:8px}
+.drop-zone-txt{font-size:13px;color:var(--text2)}
+.drop-zone-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.import-preview{max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);margin-top:12px;font-size:11px}
+.import-preview table{min-width:0;font-size:11px}
+.import-preview th{font-size:10px;padding:5px 8px}
+.import-preview td{padding:4px 8px}
+.col-map{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+.col-map select{padding:5px 7px;font-size:12px}
+.import-step{display:none}.import-step.active{display:block}
+.import-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.import-type-card{border:1px solid var(--border);border-radius:var(--radius);padding:12px;cursor:pointer;transition:all .15s;text-align:center}
+.import-type-card:hover{border-color:var(--border2)}
+.import-type-card.sel{border-color:var(--accent);background:rgba(212,168,67,.08)}
+.import-type-card .itc-icon{font-size:22px;margin-bottom:4px}
+.import-type-card .itc-lbl{font-size:12px;font-weight:500}
+.import-type-card .itc-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.match-ok{color:var(--green)}
+.match-warn{color:var(--accent)}
+.match-err{color:var(--red)}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e2126;border:1px solid var(--border2);border-radius:var(--radius);padding:10px 18px;font-size:13px;color:var(--text);opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
 #toast.show{opacity:1}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
@@ -208,6 +231,72 @@ tbody tr:hover td{background:var(--surface2)}
     <select id="add-start-select"></select>
     <button class="modal-btn" onclick="confirmAddToStart()">Aggiungi</button>
     <button class="modal-cancel" onclick="document.getElementById('add-start-modal').classList.remove('open')">Annulla</button>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div id="import-modal" class="overlay">
+  <div class="modal" style="width:min(620px,96vw)">
+    <h2>Importa da Excel / CSV</h2>
+
+    <!-- STEP 1: file drop -->
+    <div class="import-step active" id="imp-step1">
+      <p>Trascina un file <strong>.xlsx</strong> o <strong>.csv</strong> oppure clicca per selezionarlo.</p>
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('imp-file').click()" ondragover="e=>{e.preventDefault();this.classList.add('drag-over')}" ondragleave="this.classList.remove('drag-over')" ondrop="impOnDrop(event)">
+        <input type="file" id="imp-file" accept=".xlsx,.xls,.csv" onchange="impLoadFile(this.files[0])">
+        <div class="drop-zone-icon">📂</div>
+        <div class="drop-zone-txt">Clicca o trascina il file qui</div>
+        <div class="drop-zone-sub">.xlsx · .xls · .csv</div>
+      </div>
+    </div>
+
+    <!-- STEP 2: type + sheet + options -->
+    <div class="import-step" id="imp-step2">
+      <p id="imp-filename" style="color:var(--green);font-size:12px;margin-bottom:4px"></p>
+
+      <label>Tipo di importazione</label>
+      <div class="import-type-grid">
+        <div class="import-type-card sel" id="itc-dati" onclick="impSelectType('dati')">
+          <div class="itc-icon">📋</div><div class="itc-lbl">Dati gara</div>
+          <div class="itc-sub">Tempi e anelli per una tappa</div>
+        </div>
+        <div class="import-type-card" id="itc-cavalieri" onclick="impSelectType('cavalieri')">
+          <div class="itc-icon">🏇</div><div class="itc-lbl">Lista cavalieri</div>
+          <div class="itc-sub">Nome e cavallo</div>
+        </div>
+        <div class="import-type-card" id="itc-partenza" onclick="impSelectType('partenza')">
+          <div class="itc-icon">📋</div><div class="itc-lbl">Lista partenza</div>
+          <div class="itc-sub">Ordine partenza tappa</div>
+        </div>
+      </div>
+
+      <div id="imp-sheet-wrap" style="display:none;margin-top:12px">
+        <label>Foglio Excel</label>
+        <select id="imp-sheet" onchange="impOnSheetChange()"></select>
+      </div>
+
+      <div id="imp-tappa-wrap" style="margin-top:12px">
+        <label>Tappa di destinazione</label>
+        <select id="imp-tappa"></select>
+      </div>
+
+      <div id="imp-merge-wrap" style="margin-top:10px;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="imp-merge" checked style="width:auto;accent-color:var(--accent)">
+        <label style="margin:0;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text2);cursor:pointer" for="imp-merge">Unisci ai dati esistenti (non sovrascrive le celle già compilate)</label>
+      </div>
+
+      <button class="modal-btn" style="margin-top:16px" onclick="impGoPreview()">Anteprima →</button>
+      <button class="modal-cancel" onclick="impReset()">✕ Ricomincia</button>
+    </div>
+
+    <!-- STEP 3: preview + confirm -->
+    <div class="import-step" id="imp-step3">
+      <div id="imp-summary" style="font-size:13px;margin-bottom:10px;line-height:1.7"></div>
+      <div id="imp-preview" class="import-preview"></div>
+      <div id="imp-warnings" style="font-size:12px;color:var(--accent);margin-top:8px;line-height:1.7"></div>
+      <button class="modal-btn" id="imp-confirm-btn" onclick="impConfirm()">✅ Importa dati</button>
+      <button class="modal-cancel" onclick="impBack()">← Torna indietro</button>
+    </div>
   </div>
 </div>
 
@@ -423,17 +512,20 @@ function renderHeaderActions(){
 
 // ═══════════════════ EXPORT BAR ═══════════════════
 function exportBar(ctx){
+  const impBtn=currentUser?`<button class="icon-btn" onclick="openImportModal()" style="border-color:rgba(62,207,142,.35);color:var(--green)">⬆ Importa Excel</button>`:'';
   if(ctx==='race'){
     return`<div class="export-bar no-print">
       <button class="icon-btn" onclick="openPdfModal('race')">🖨 PDF</button>
       <button class="icon-btn" onclick="exportCSV('race')">📄 CSV</button>
       <button class="icon-btn" onclick="exportXLSX('race')">📊 XLSX</button>
+      ${impBtn}
     </div>`;
   }
   return`<div class="export-bar no-print">
     <button class="icon-btn" onclick="openPdfModal('generale')">🖨 PDF</button>
     <button class="icon-btn" onclick="exportCSV('generale')">📄 CSV</button>
     <button class="icon-btn" onclick="exportXLSX('generale')">📊 XLSX</button>
+    ${impBtn}
   </div>`;
 }
 
@@ -805,7 +897,324 @@ function styleSheet(ws,cols,rows){
   ws['!freeze']={xSplit:0,ySplit:1};
 }
 
-// ═══════════════════ TOAST ═══════════════════
+// ═══════════════════ IMPORT ENGINE ═══════════════════
+let impWb=null, impType='dati', impRows=[], impHeaders=[], impParsed=null;
+
+function openImportModal(){
+  requireLogin(()=>{
+    impReset();
+    // populate tappa select
+    const sel=document.getElementById('imp-tappa');
+    sel.innerHTML=RD.map(r=>`<option value="${r.id}">${r.full}</option>`).join('');
+    // pre-select current race if viewing one
+    if(S.race)sel.value=S.race;
+    document.getElementById('import-modal').classList.add('open');
+  });
+}
+
+function impReset(){
+  impWb=null;impRows=[];impHeaders=[];impParsed=null;
+  document.getElementById('imp-file').value='';
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  document.getElementById('imp-filename').textContent='';
+  document.getElementById('imp-sheet-wrap').style.display='none';
+  document.getElementById('imp-preview').innerHTML='';
+  document.getElementById('imp-summary').innerHTML='';
+  document.getElementById('imp-warnings').innerHTML='';
+  impShowStep(1);
+}
+function impBack(){impShowStep(2);}
+function impShowStep(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('imp-step'+i).classList.toggle('active',i===n);
+  });
+}
+function impSelectType(t){
+  impType=t;
+  ['dati','cavalieri','partenza'].forEach(k=>{
+    document.getElementById('itc-'+k).classList.toggle('sel',k===t);
+  });
+  document.getElementById('imp-tappa-wrap').style.display=
+    (t==='dati'||t==='partenza')?'block':'none';
+}
+
+function impOnDrop(e){
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f)impLoadFile(f);
+}
+
+function impLoadFile(file){
+  if(!file)return;
+  if(typeof XLSX==='undefined'){toast('Libreria XLSX non caricata');return;}
+  document.getElementById('imp-filename').textContent='📂 '+file.name;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=new Uint8Array(e.target.result);
+      impWb=XLSX.read(data,{type:'array',cellDates:true});
+      const sheets=impWb.SheetNames;
+      const sheetSel=document.getElementById('imp-sheet');
+      sheetSel.innerHTML=sheets.map(s=>`<option value="${s}">${s}</option>`).join('');
+      document.getElementById('imp-sheet-wrap').style.display=sheets.length>1?'block':'none';
+      impLoadSheet(sheets[0]);
+      impShowStep(2);
+    }catch(err){toast('Errore lettura file: '+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function impOnSheetChange(){
+  impLoadSheet(document.getElementById('imp-sheet').value);
+}
+
+function impLoadSheet(sheetName){
+  const ws=impWb.Sheets[sheetName];
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  if(!raw||raw.length<2){toast('Foglio vuoto o non valido');return;}
+  // first non-empty row = header
+  let hi=0;
+  while(hi<raw.length&&raw[hi].every(c=>c===''||c===null||c===undefined))hi++;
+  impHeaders=raw[hi].map(c=>String(c||'').trim());
+  impRows=raw.slice(hi+1).filter(r=>r.some(c=>c!==''&&c!==null&&c!==undefined));
+}
+
+function impGoPreview(){
+  if(!impWb||!impRows.length){toast('Carica prima un file');return;}
+  try{
+    if(impType==='dati')       impParsed=impParseDati();
+    else if(impType==='cavalieri') impParsed=impParseCavalieri();
+    else if(impType==='partenza')  impParsed=impParsePartenza();
+    if(!impParsed){return;}
+    renderImpPreview();
+    impShowStep(3);
+  }catch(err){toast('Errore analisi: '+err.message);console.error(err);}
+}
+
+// ── FUZZY NAME MATCH ──────────────────────────────────────────
+function normName(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'').trim();}
+function findRider(nameVal){
+  const n=normName(nameVal);
+  if(!n)return null;
+  // exact
+  let r=P.find(p=>normName(p.name)===n);
+  if(r)return r;
+  // contains
+  r=P.find(p=>normName(p.name).includes(n)||n.includes(normName(p.name)));
+  if(r)return r;
+  // by id
+  const num=parseInt(nameVal);
+  if(!isNaN(num))return P.find(p=>p.id===num)||null;
+  return null;
+}
+function colIdx(keywords){
+  // find best matching column index from headers
+  const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  for(const kw of keywords){
+    const k=norm(kw);
+    const i=impHeaders.findIndex(h=>norm(h).includes(k)||k.includes(norm(h)));
+    if(i>=0)return i;
+  }
+  return -1;
+}
+
+// ── PARSE DATI GARA ──────────────────────────────────────────
+function impParseDati(){
+  const rid=document.getElementById('imp-tappa').value;
+  const rd=getRace(rid);
+  const bat=rd.batteries||6;
+  const batNames=getBatNames(rd);
+
+  // auto-detect columns
+  const iName  = colIdx(['cavaliere','rider','nome','name','atleta']);
+  const iBP    = colIdx(['bprova','prova','batt.prova','battprova','bp','b.prova']);
+
+  if(iName<0){toast('Colonna "Cavaliere" non trovata. Assicurati che l\'intestazione contenga "Cavaliere" o "Nome".');return null;}
+
+  // detect time columns for each battery
+  const timeCols=[], ringCols=[];
+  for(let bi=0;bi<bat;bi++){
+    const bn=batNames[bi];
+    // time col: match battery name or "batteria N" or "bat N" or "B1", "B2"…
+    const tIdx=colIdx([bn+' (s)',bn,'batteria '+(bi+1)+' (s)','batteria '+(bi+1),'bat'+(bi+1),'b'+(bi+1),'t'+(bi+1)]);
+    // ring col: match with "(anello)" or "SI/NO" suffix
+    const rIdx=colIdx([bn+' (anello)',bn+' anello','batteria '+(bi+1)+' (anello)','anello'+(bi+1),'ring'+(bi+1),'r'+(bi+1)]);
+    timeCols.push(tIdx);
+    ringCols.push(rIdx);
+  }
+
+  const matched=[], unmatched=[];
+  for(const row of impRows){
+    const nameVal=row[iName];
+    if(!nameVal)continue;
+    const rider=findRider(nameVal);
+    if(!rider){unmatched.push(String(nameVal));continue;}
+    const entry={
+      bp: iBP>=0&&row[iBP]!==''?String(row[iBP]):'',
+      b: timeCols.map((ti,bi)=>{
+        const tRaw=ti>=0?row[ti]:'';
+        const rRaw=ringCols[bi]>=0?row[ringCols[bi]]:'';
+        const t=tRaw!==''&&tRaw!==null&&tRaw!==undefined?String(tRaw).replace(',','.'):'';
+        const r=['si','sì','1','true','yes'].includes(String(rRaw).toLowerCase().trim());
+        return{t,r};
+      })
+    };
+    matched.push({rider,entry,nameVal});
+  }
+  return{type:'dati',rid,rd,matched,unmatched,timeCols,ringCols,batNames};
+}
+
+// ── PARSE CAVALIERI ──────────────────────────────────────────
+function impParseCavalieri(){
+  const iName  = colIdx(['cavaliere','rider','nome','name','atleta','cognome']);
+  const iHorse = colIdx(['cavallo','horse','animale']);
+  if(iName<0){toast('Colonna "Cavaliere" non trovata.');return null;}
+
+  const parsed=[];
+  for(const row of impRows){
+    const name=String(row[iName]||'').trim().toUpperCase();
+    if(!name)continue;
+    const horse=iHorse>=0?String(row[iHorse]||'').trim().toUpperCase():'';
+    parsed.push({name,horse});
+  }
+  if(!parsed.length){toast('Nessun dato trovato nel foglio');return null;}
+  return{type:'cavalieri',parsed};
+}
+
+// ── PARSE PARTENZA ───────────────────────────────────────────
+function impParsePartenza(){
+  const rid=document.getElementById('imp-tappa').value;
+  const rd=getRace(rid);
+  const iName=colIdx(['cavaliere','rider','nome','name','atleta']);
+  const iNum =colIdx(['n°','n.','num','numero','pos','order','partenza']);
+  if(iName<0){toast('Colonna "Cavaliere" non trovata.');return null;}
+
+  let rows=[...impRows];
+  // sort by num col if present
+  if(iNum>=0)rows.sort((a,b)=>parseInt(a[iNum]||9999)-parseInt(b[iNum]||9999));
+
+  const matched=[], unmatched=[];
+  for(const row of rows){
+    const nv=row[iName];if(!nv)continue;
+    const rider=findRider(nv);
+    if(rider)matched.push(rider);
+    else unmatched.push(String(nv));
+  }
+  return{type:'partenza',rid,rd,matched,unmatched};
+}
+
+// ── RENDER PREVIEW ───────────────────────────────────────────
+function renderImpPreview(){
+  const p=impParsed;
+  let summary='', warnings='', tableHTML='';
+
+  if(p.type==='dati'){
+    const total=p.matched.length+p.unmatched.length;
+    summary=`<span class="match-ok">✓ ${p.matched.length} cavalieri riconosciuti</span>`;
+    if(p.unmatched.length)summary+=` &nbsp;<span class="match-warn">⚠ ${p.unmatched.length} non trovati</span>`;
+    summary+=`<br><small style="color:var(--text3)">Tappa: <strong style="color:var(--text)">${p.rd.full}</strong> · ${p.rd.batteries} batterie rilevate</small>`;
+    if(p.unmatched.length)warnings=`<strong>Non trovati:</strong> ${p.unmatched.slice(0,8).join(', ')}${p.unmatched.length>8?' …':''}`;
+
+    // preview table — show first 8 rows
+    const previewRows=p.matched.slice(0,8);
+    tableHTML=`<table><thead><tr><th>Cavaliere</th><th>B.Prova</th>${p.batNames.map(n=>`<th>${n}</th>`).join('')}</tr></thead>
+    <tbody>${previewRows.map(({rider,entry})=>`<tr>
+      <td>${rider.name}</td>
+      <td class="time-val">${entry.bp||'—'}</td>
+      ${entry.b.map(b=>`<td class="time-val ${b.r?'match-ok':''}">${b.t||'—'}${b.r?' ●':''}</td>`).join('')}
+    </tr>`).join('')}
+    ${p.matched.length>8?`<tr><td colspan="${2+p.batNames.length}" style="text-align:center;color:var(--text3);padding:6px">… e altri ${p.matched.length-8} cavalieri</td></tr>`:''}
+    </tbody></table>`;
+
+  } else if(p.type==='cavalieri'){
+    summary=`<span class="match-ok">✓ ${p.parsed.length} cavalieri da importare</span>`;
+    const merge=document.getElementById('imp-merge').checked;
+    if(merge)summary+=`<br><small style="color:var(--text3)">Modalità: aggiorna o aggiungi (non elimina cavalieri esistenti)</small>`;
+    else summary+=`<br><small style="color:var(--accent)">⚠ La lista attuale verrà sostituita completamente</small>`;
+    tableHTML=`<table><thead><tr><th>#</th><th>Cavaliere</th><th>Cavallo</th><th>Stato</th></tr></thead>
+    <tbody>${p.parsed.slice(0,10).map((r,i)=>{
+      const existing=P.find(p2=>normName(p2.name)===normName(r.name));
+      const status=existing?`<span class="match-warn">aggiorna</span>`:`<span class="match-ok">nuovo</span>`;
+      return`<tr><td style="color:var(--text3)">${i+1}</td><td>${r.name}</td><td style="color:var(--text3)">${r.horse||'—'}</td><td>${status}</td></tr>`;
+    }).join('')}
+    ${p.parsed.length>10?`<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:6px">… e altri ${p.parsed.length-10}</td></tr>`:''}
+    </tbody></table>`;
+
+  } else if(p.type==='partenza'){
+    summary=`<span class="match-ok">✓ ${p.matched.length} cavalieri in ordine di partenza</span>`;
+    if(p.unmatched.length)summary+=` &nbsp;<span class="match-warn">⚠ ${p.unmatched.length} non trovati</span>`;
+    summary+=`<br><small style="color:var(--text3)">Tappa: <strong style="color:var(--text)">${p.rd.full}</strong></small>`;
+    if(p.unmatched.length)warnings=`<strong>Non trovati:</strong> ${p.unmatched.slice(0,8).join(', ')}`;
+    tableHTML=`<table><thead><tr><th>N°</th><th>Cavaliere</th><th>Cavallo</th></tr></thead>
+    <tbody>${p.matched.slice(0,10).map((r,i)=>`<tr><td style="color:var(--accent);font-weight:600">${i+1}</td><td>${r.name}</td><td style="color:var(--text3)">${r.horse||'—'}</td></tr>`).join('')}
+    ${p.matched.length>10?`<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:6px">… e altri ${p.matched.length-10}</td></tr>`:''}
+    </tbody></table>`;
+  }
+
+  document.getElementById('imp-summary').innerHTML=summary;
+  document.getElementById('imp-warnings').innerHTML=warnings;
+  document.getElementById('imp-preview').innerHTML=tableHTML;
+  document.getElementById('imp-confirm-btn').disabled=
+    (p.type==='dati'&&p.matched.length===0)||
+    (p.type==='cavalieri'&&p.parsed.length===0)||
+    (p.type==='partenza'&&p.matched.length===0);
+}
+
+// ── CONFIRM IMPORT ───────────────────────────────────────────
+function impConfirm(){
+  const p=impParsed;if(!p)return;
+  const merge=document.getElementById('imp-merge').checked;
+
+  if(p.type==='dati'){
+    const rid=p.rid;
+    if(!gdata[rid])gdata[rid]={};
+    p.matched.forEach(({rider,entry})=>{
+      const pid=rider.id;
+      if(merge&&gdata[rid][pid]){
+        // only fill empty cells
+        const existing=gdata[rid][pid];
+        if(!existing.bp&&entry.bp)existing.bp=entry.bp;
+        entry.b.forEach((b,bi)=>{
+          if(bi<existing.b.length){
+            if(existing.b[bi].t===''&&b.t!=='')existing.b[bi].t=b.t;
+            if(!existing.b[bi].r&&b.r)existing.b[bi].r=b.r;
+          }
+        });
+      }else{
+        gdata[rid][pid]=entry;
+      }
+    });
+    fbSave('gara2026',gdata,`Importati ${p.matched.length} cavalieri ✓`);
+    dirty=false;
+
+  }else if(p.type==='cavalieri'){
+    if(merge){
+      const newList=[...P];
+      p.parsed.forEach(r=>{
+        const idx=newList.findIndex(p2=>normName(p2.name)===normName(r.name));
+        if(idx>=0){if(r.horse)newList[idx].horse=r.horse;}
+        else{newList.push({id:newList.length?Math.max(...newList.map(x=>x.id))+1:1,...r});}
+      });
+      P=newList;
+    }else{
+      P=p.parsed.map((r,i)=>({id:i+1,...r}));
+    }
+    fbSave('riders',P,`Lista cavalieri aggiornata (${P.length}) ✓`);
+
+  }else if(p.type==='partenza'){
+    rdTemp=true;
+    const idx=RD.findIndex(r=>r.id===p.rid);
+    if(idx>=0)RD[idx].startingOrder=p.matched.map(r=>r.id);
+    fbSave('races',RD,`Lista partenza importata (${p.matched.length}) ✓`);
+    rdTemp=null;
+  }
+
+  document.getElementById('import-modal').classList.remove('open');
+  impReset();
+  render();
+}
+// ─────────────────────────────────────────────────────────────
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 
 // ═══════════════════ INIT ═══════════════════
