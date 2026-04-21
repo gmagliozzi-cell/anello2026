@@ -995,31 +995,34 @@ function impGoPreview(){
 // ── FUZZY NAME MATCH ──────────────────────────────────────────
 function normName(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9\s]/g,' ').replace(/\s+/g,' ').trim();}
 function findRider(nameVal, idVal){
-  // 1. try by numeric ID (first column)
-  const num=parseInt(idVal);
-  if(!isNaN(num)&&num>0){const byId=P.find(p=>p.id===num);if(byId)return byId;}
   const n=normName(nameVal);
   if(!n)return null;
-  // 2. exact normalized match
+  // 1. exact normalized match (most reliable)
   let r=P.find(p=>normName(p.name)===n);if(r)return r;
-  // 3. all words of file name present in DB name (handles extra/missing spaces)
+  // 2. all words of file name present in DB name
   const words=n.split(' ').filter(w=>w.length>2);
   if(words.length>=2){
     r=P.find(p=>{const pn=normName(p.name);return words.every(w=>pn.includes(w));});
     if(r)return r;
   }
-  // 4. DB name words present in file name
+  // 3. DB name words all present in file name
   r=P.find(p=>{const pn=normName(p.name);const pw=pn.split(' ').filter(w=>w.length>2);return pw.length>=2&&pw.every(w=>n.includes(w));});
   if(r)return r;
-  // 5. one-way substring (last resort)
+  // 4. one-way substring
   r=P.find(p=>normName(p.name).includes(n)||n.includes(normName(p.name)));
-  return r||null;
+  if(r)return r;
+  // 5. by numeric ID only if name matching completely failed
+  const num=parseInt(idVal);
+  if(!isNaN(num)&&num>0)return P.find(p=>p.id===num)||null;
+  return null;
 }
 function colIdx(keywords){
   const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
   for(const kw of keywords){
     const k=norm(kw);
-    const i=impHeaders.findIndex(h=>norm(h)===k||norm(h).includes(k)||k.includes(norm(h)));
+    if(!k)continue;
+    // skip empty headers — k.includes('') is always true in JS, causing false matches
+    const i=impHeaders.findIndex(h=>{const nh=norm(h);if(!nh)return false;return nh===k||nh.includes(k)||k.includes(nh);});
     if(i>=0)return i;
   }
   return -1;
